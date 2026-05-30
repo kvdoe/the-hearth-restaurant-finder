@@ -5,121 +5,92 @@ export default async function handler(req, res) {
 
   const { lat, lon, address, displayName, cuisine, budget } = req.query;
 
-  const YELP_API_KEY = process.env.YELP_API_KEY;
-  if (!YELP_API_KEY) {
-    return res.status(500).json({ error: 'Server misconfigured.' });
-  }
+  const YELP_API_KEY   = process.env.YELP_API_KEY;
+  const MAPBOX_TOKEN   = process.env.MAPBOX_TOKEN;
+  if (!YELP_API_KEY) return res.status(500).json({ error: 'Server misconfigured.' });
 
   // ── Resolve coordinates ────────────────────────────────────────────────────
-  let searchLat = lat;
-  let searchLon = lon;
+  let searchLat    = lat;
+  let searchLon    = lon;
   let resolvedName = displayName || address || '';
 
   if (!searchLat || !searchLon) {
-    if (!address || !address.trim()) {
+    if (!address?.trim()) {
       return res.status(400).json({ error: 'Please enter a location.' });
     }
-
     const addr = address.trim();
 
-    // Layer 1: US Census Bureau — official TIGER address database,
-    //          comprehensive US residential coverage, no API key needed.
-    try {
-      const cp = new URLSearchParams({
-        address:   addr,
-        benchmark: 'Public_AR_Current',
-        format:    'json'
-      });
-      const cr = await fetch(
-        `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${cp}`,
-        { headers: { 'User-Agent': 'TheHearthApp/1.0' }, signal: AbortSignal.timeout(6000) }
-      );
-      if (cr.ok) {
-        const cd = await cr.json();
-        const m  = cd?.result?.addressMatches?.[0];
-        if (m) {
-          searchLat    = String(m.coordinates.y);
-          searchLon    = String(m.coordinates.x);
-          resolvedName = m.matchedAddress;
+    // Layer 1: Mapbox (best US coverage, Google Maps-level accuracy)
+    if (MAPBOX_TOKEN) {
+      try {
+        const url =
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json` +
+          `?access_token=${MAPBOX_TOKEN}&country=US&limit=1&language=en`;
+        const r = await fetch(url, { headers: { 'User-Agent': 'TheHearthApp/1.0' }, signal: AbortSignal.timeout(6000) });
+        if (r.ok) {
+          const d = await r.json();
+          const f = d.features?.[0];
+          if (f) {
+            searchLat    = String(f.geometry.coordinates[1]);
+            searchLon    = String(f.geometry.coordinates[0]);
+            resolvedName = f.place_name;
+          }
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
-    // Layer 2: Photon (Komoot) — better US residential coverage than Nominatim
+    // Layer 2: US Census Bureau (official TIGER address database)
     if (!searchLat || !searchLon) {
       try {
-        const pr = await fetch(
-          `https://photon.komoot.io/api/?q=${encodeURIComponent(addr)}&limit=5&lang=en`,
-          { headers: { 'User-Agent': 'TheHearthApp/1.0' }, signal: AbortSignal.timeout(5000) }
-        );
+        const cp = new URLSearchParams({ address: addr, benchmark: 'Public_AR_Current', format: 'json' });
+        const cr = await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${cp}`, { signal: AbortSignal.timeout(6000) });
+        if (cr.ok) {
+          const cd = await cr.json();
+          const m  = cd?.result?.addressMatches?.[0];
+          if (m) { searchLat = String(m.coordinates.y); searchLon = String(m.coordinates.x); resolvedName = m.matchedAddress; }
+        }
+      } catch (_) {}
+    }
+
+    // Layer 3: Photon
+    if (!searchLat || !searchLon) {
+      try {
+        const pr = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(addr)}&limit=1&lang=en`, { signal: AbortSignal.timeout(5000) });
         if (pr.ok) {
-          const pd   = await pr.json();
-          const usHit = (pd.features || []).find(f => {
-            const cc = (f.properties?.countrycode || '').toUpperCase();
-            return !cc || cc === 'US';
-          });
-          if (usHit) {
-            searchLat    = String(usHit.geometry.coordinates[1]);
-            searchLon    = String(usHit.geometry.coordinates[0]);
-            const p      = usHit.properties;
-            resolvedName = [p.housenumber && p.street ? `${p.housenumber} ${p.street}` : (p.name||''), p.city||p.town, p.state, p.postcode].filter(Boolean).join(', ');
+          const pd  = await pr.json();
+          const hit = (pd.features || []).find(f => !f.properties?.countrycode || f.properties.countrycode.toUpperCase() === 'US');
+          if (hit) {
+            searchLat    = String(hit.geometry.coordinates[1]);
+            searchLon    = String(hit.geometry.coordinates[0]);
+            const p      = hit.properties;
+            resolvedName = [p.housenumber && p.street ? `${p.housenumber} ${p.street}` : (p.name || ''), p.city || p.town, p.state].filter(Boolean).join(', ');
           }
         }
       } catch (_) {}
     }
 
-    // Layer 3: Nominatim — last resort, US-restricted
+    // Layer 4: Nominatim (last resort)
     if (!searchLat || !searchLon) {
       try {
-        const np = new URLSearchParams({
-          q:                addr,
-          format:           'json',
-          limit:            '1',
-          countrycodes:     'us',
-          addressdetails:   '1',
-          'accept-language':'en'
-        });
-        const nr = await fetch(
-          `https://nominatim.openstreetmap.org/search?${np}`,
-          { headers: { 'User-Agent': 'TheHearthApp/1.0', 'Accept-Language': 'en' }, signal: AbortSignal.timeout(5000) }
-        );
-        if (nr.ok) {
-          const nd = await nr.json();
-          if (nd?.length) {
-            searchLat    = nd[0].lat;
-            searchLon    = nd[0].lon;
-            resolvedName = nd[0].display_name;
-          }
-        }
+        const np = new URLSearchParams({ q: addr, format: 'json', limit: '1', countrycodes: 'us', 'accept-language': 'en' });
+        const nr = await fetch(`https://nominatim.openstreetmap.org/search?${np}`, { headers: { 'User-Agent': 'TheHearthApp/1.0' }, signal: AbortSignal.timeout(5000) });
+        if (nr.ok) { const nd = await nr.json(); if (nd?.length) { searchLat = nd[0].lat; searchLon = nd[0].lon; resolvedName = nd[0].display_name; } }
       } catch (_) {}
     }
 
     if (!searchLat || !searchLon) {
-      return res.status(404).json({
-        error: `Could not locate "${addr}". Please pick a suggestion from the dropdown, or add more detail (city, state, ZIP).`
-      });
+      return res.status(404).json({ error: `Could not locate "${addr}". Try selecting a suggestion from the dropdown, or add a city and state.` });
     }
   }
 
-  // ── Price filter — exact price tier ───────────────────────────────────────
-  const priceMap   = { '1':'1', '2':'2', '3':'3', '4':'4', any:'1,2,3,4' };
+  // ── Exact price tier ───────────────────────────────────────────────────────
+  const priceMap       = { '1':'1', '2':'2', '3':'3', '4':'4', any:'1,2,3,4' };
   const priceFilter    = priceMap[budget] || '1,2,3,4';
   const categoryFilter = cuisine || 'restaurants';
 
-  // ── Yelp search ───────────────────────────────────────────────────────────
-  const yp = new URLSearchParams({
-    latitude:   searchLat,
-    longitude:  searchLon,
-    categories: categoryFilter,
-    price:      priceFilter,
-    sort_by:    'distance',
-    limit:      '12',
-    radius:     '8000'
-  });
-
-  const yr = await fetch(`https://api.yelp.com/v3/businesses/search?${yp}`, {
-    headers: { Authorization: `Bearer ${YELP_API_KEY}` }
-  });
+  // ── Yelp search ────────────────────────────────────────────────────────────
+  const yp = new URLSearchParams({ latitude: searchLat, longitude: searchLon, categories: categoryFilter, price: priceFilter, sort_by: 'distance', limit: '12', radius: '8000' });
+  const yr = await fetch(`https://api.yelp.com/v3/businesses/search?${yp}`, { headers: { Authorization: `Bearer ${YELP_API_KEY}` } });
 
   if (!yr.ok) {
     if (yr.status === 401) return res.status(502).json({ error: 'Yelp API key invalid.' });
@@ -129,25 +100,18 @@ export default async function handler(req, res) {
   const yd         = await yr.json();
   const businesses = yd.businesses || [];
 
-  // Enrich first 6 with actual website URLs
+  // Enrich first 6 with real website URLs
   const enriched = await Promise.allSettled(
     businesses.slice(0, 6).map(async b => {
       try {
-        const dr = await fetch(`https://api.yelp.com/v3/businesses/${b.id}`, {
-          headers: { Authorization: `Bearer ${YELP_API_KEY}` }
-        });
-        if (dr.ok) {
-          const dd = await dr.json();
-          return { ...b, website: dd.website || null };
-        }
+        const dr = await fetch(`https://api.yelp.com/v3/businesses/${b.id}`, { headers: { Authorization: `Bearer ${YELP_API_KEY}` } });
+        if (dr.ok) { const dd = await dr.json(); return { ...b, website: dd.website || null }; }
       } catch (_) {}
       return { ...b, website: null };
     })
   );
   const enrichedMap = {};
-  enriched.forEach((r, i) => {
-    if (r.status === 'fulfilled') enrichedMap[businesses[i].id] = r.value;
-  });
+  enriched.forEach((r, i) => { if (r.status === 'fulfilled') enrichedMap[businesses[i].id] = r.value; });
 
   return res.status(200).json({
     restaurants: businesses.map(b => enrichedMap[b.id] || b),

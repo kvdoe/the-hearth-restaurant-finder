@@ -1,120 +1,120 @@
-// Server-side autocomplete: Photon (Komoot) → Nominatim
-// Photon has much better US residential address coverage than plain Nominatim.
-// Running this server-side avoids browser CORS limits and lets us merge sources.
+// Smart autocomplete: detects query type and routes to the right source.
+// Street addresses → Census Bureau (official US government data, ~100% coverage).
+// City / neighborhood / ZIP → Photon then Nominatim.
+// No API keys required.
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+
   const { q } = req.query;
   if (!q || q.trim().length < 2) return res.json([]);
+  const query = q.trim();
 
   const results = [];
   const seen    = new Set();
 
-  function add(lat, lon, primary, secondary, icon = 'pin') {
-    const key = `${primary}|${secondary}`;
+  function push(lat, lon, primary, secondary, icon = 'pin', displayName) {
+    const key = `${String(lat).slice(0,8)}|${String(lon).slice(0,8)}`;
     if (!primary || seen.has(key)) return;
     seen.add(key);
     results.push({
-      lat: String(lat),
-      lon: String(lon),
+      lat:         String(lat),
+      lon:         String(lon),
       primary,
       secondary,
       icon,
-      displayName: [primary, secondary].filter(Boolean).join(', ')
+      displayName: displayName || [primary, secondary].filter(Boolean).join(', ')
     });
   }
 
-  // ── Source 1: Photon by Komoot ─────────────────────────────────────────
-  // Uses an enhanced version of OpenStreetMap with significantly better
-  // US residential address coverage than standard Nominatim.
-  try {
-    const photonRes = await fetch(
-      `https://photon.komoot.io/api/?q=${encodeURIComponent(q.trim())}&limit=8&lang=en`,
-      {
+  // Detect query type
+  const isStreetAddress = /^\d/.test(query);             // starts with a number
+  const isZip           = /^\d{5}$/.test(query.trim());  // exactly 5 digits
+
+  // ── Census Bureau: street addresses ────────────────────────────────────────
+  // Uses the TIGER/Line database — the official US address registry.
+  // Only fires when the user has typed enough to resemble a real address.
+  if (isStreetAddress && query.length >= 8) {
+    try {
+      const cp = new URLSearchParams({ address: query, benchmark: 'Public_AR_Current', format: 'json' });
+      const cr = await fetch(
+        `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${cp}`,
+        { headers: { 'User-Agent': 'TheHearthApp/1.0' }, signal: AbortSignal.timeout(5500) }
+      );
+      if (cr.ok) {
+        const cd = await cr.json();
+        for (const m of (cd?.result?.addressMatches || [])) {
+          const parts = m.matchedAddress.split(', ');
+          push(
+            m.coordinates.y, m.coordinates.x,
+            parts.slice(0, 2).join(', '),   // e.g. "7818 Ravenden Rd, Frisco"
+            parts.slice(2).join(', '),        // e.g. "TX, 75035"
+            'house',
+            m.matchedAddress
+          );
+        }
+      }
+    } catch (e) { console.error('Census autocomplete:', e.message); }
+  }
+
+  // ── Photon (Komoot): cities, neighborhoods, partial addresses ──────────────
+  if (results.length < 6) {
+    try {
+      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&lang=en`;
+      const pr = await fetch(photonUrl, {
         headers: { 'User-Agent': 'TheHearthApp/1.0' },
         signal: AbortSignal.timeout(5000)
-      }
-    );
-    if (photonRes.ok) {
-      const data = await photonRes.json();
-      for (const f of (data.features || [])) {
-        const p   = f.properties || {};
-        const cc  = (p.countrycode || '').toUpperCase();
-        if (cc && cc !== 'US') continue; // US only
-
-        const [lon, lat] = f.geometry.coordinates;
-        let primary = '', secondary = '';
-
-        if (p.housenumber && p.street) {
-          primary   = `${p.housenumber} ${p.street}`;
-          secondary = [p.city || p.town || p.village, p.state, p.postcode].filter(Boolean).join(', ');
-          add(lat, lon, primary, secondary, 'house');
-        } else if (p.name && p.type === 'street') {
-          primary   = p.name;
-          secondary = [p.city || p.town, p.state].filter(Boolean).join(', ');
-          add(lat, lon, primary, secondary, 'road');
-        } else if (p.name || p.city) {
-          primary   = p.name || p.city || p.town || '';
-          secondary = [p.state, p.postcode].filter(Boolean).join(', ');
-          add(lat, lon, primary, secondary, 'city');
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Photon error:', e.message);
-  }
-
-  // ── Source 2: Nominatim (OSM) — fills gaps Photon misses ──────────────
-  if (results.length < 5) {
-    try {
-      const params = new URLSearchParams({
-        q:                q.trim(),
-        format:           'json',
-        limit:            '6',
-        countrycodes:     'us',
-        addressdetails:   '1',
-        'accept-language':'en',
-        dedupe:           '1'
       });
-      const nomRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?${params}`,
-        {
-          headers: { 'User-Agent': 'TheHearthApp/1.0', 'Accept-Language': 'en' },
-          signal: AbortSignal.timeout(5000)
-        }
-      );
-      if (nomRes.ok) {
-        const data = await nomRes.json();
-        for (const n of data) {
-          const addr = n.address || {};
-          let primary = '', secondary = '';
+      if (pr.ok) {
+        const pd = await pr.json();
+        for (const f of (pd.features || [])) {
+          const p  = f.properties || {};
+          const cc = (p.countrycode || '').toUpperCase();
+          if (cc && cc !== 'US') continue;
+          const [lon, lat] = f.geometry.coordinates;
+          let primary = '', secondary = '', icon = 'pin';
 
-          if (addr.house_number && addr.road) {
-            primary   = `${addr.house_number} ${addr.road}`;
-            secondary = [addr.city || addr.town || addr.village, addr.state, addr.postcode].filter(Boolean).join(', ');
-            add(n.lat, n.lon, primary, secondary, 'house');
-          } else if (addr.road) {
-            primary   = addr.road;
-            secondary = [addr.city || addr.town, addr.state].filter(Boolean).join(', ');
-            add(n.lat, n.lon, primary, secondary, 'road');
-          } else if (addr.neighbourhood || addr.suburb) {
-            primary   = addr.neighbourhood || addr.suburb;
-            secondary = [addr.city || addr.town, addr.state].filter(Boolean).join(', ');
-            add(n.lat, n.lon, primary, secondary, 'city');
-          } else {
-            const pts = n.display_name.split(', ');
-            primary   = pts[0];
-            secondary = pts.slice(1, 4).join(', ');
-            add(n.lat, n.lon, primary, secondary, 'pin');
+          if (p.housenumber && p.street) {
+            primary   = `${p.housenumber} ${p.street}`;
+            secondary = [p.city || p.town || p.village, p.state, p.postcode].filter(Boolean).join(', ');
+            icon      = 'house';
+          } else if (p.name || p.city || p.town) {
+            primary   = p.name || p.city || p.town || '';
+            secondary = [p.state, p.postcode].filter(Boolean).join(', ');
+            icon      = 'city';
           }
+          if (primary) push(lat, lon, primary, secondary, icon);
         }
       }
-    } catch (e) {
-      console.error('Nominatim error:', e.message);
-    }
+    } catch (e) { console.error('Photon:', e.message); }
   }
 
-  // Cache suggestions for 60s to avoid hammering upstream APIs
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+  // ── Nominatim: fills remaining gaps ────────────────────────────────────────
+  if (results.length < 4) {
+    try {
+      const np = new URLSearchParams({
+        q: query, format: 'json', limit: '5',
+        countrycodes: 'us', addressdetails: '1',
+        'accept-language': 'en', dedupe: '1'
+      });
+      const nr = await fetch(`https://nominatim.openstreetmap.org/search?${np}`, {
+        headers: { 'User-Agent': 'TheHearthApp/1.0', 'Accept-Language': 'en' },
+        signal: AbortSignal.timeout(4500)
+      });
+      if (nr.ok) {
+        const nd = await nr.json();
+        for (const n of nd) {
+          const addr = n.address || {};
+          const primary = addr.house_number && addr.road
+            ? `${addr.house_number} ${addr.road}`
+            : (addr.road || addr.city || addr.town || n.display_name.split(',')[0]);
+          const secondary = [addr.city || addr.town || addr.village, addr.state, addr.postcode].filter(Boolean).join(', ');
+          push(n.lat, n.lon, primary, secondary, addr.house_number ? 'house' : 'city', n.display_name);
+        }
+      }
+    } catch (e) { console.error('Nominatim:', e.message); }
+  }
+
   return res.json(results.slice(0, 7));
 }
