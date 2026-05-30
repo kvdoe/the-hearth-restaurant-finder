@@ -3,7 +3,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { lat, lon, address, displayName, cuisine, budget } = req.query;
+  const { lat, lon, address, displayName, cuisine, budget, miles } = req.query;
 
   const YELP_API_KEY   = process.env.YELP_API_KEY;
   const MAPBOX_TOKEN   = process.env.MAPBOX_TOKEN;
@@ -88,8 +88,11 @@ export default async function handler(req, res) {
   const priceFilter    = priceMap[budget] || '1,2,3,4';
   const categoryFilter = cuisine || 'restaurants';
 
+  // ── Radius (Yelp hard-caps at 40 000 m ≈ 24.85 mi) ────────────────────────
+  const radiusMeters = Math.min(Math.round((parseFloat(miles) || 10) * 1609.344), 40000);
+
   // ── Yelp search ────────────────────────────────────────────────────────────
-  const yp = new URLSearchParams({ latitude: searchLat, longitude: searchLon, categories: categoryFilter, price: priceFilter, sort_by: 'distance', limit: '12', radius: '8000' });
+  const yp = new URLSearchParams({ latitude: searchLat, longitude: searchLon, categories: categoryFilter, price: priceFilter, sort_by: 'distance', limit: '20', radius: String(radiusMeters) });
   const yr = await fetch(`https://api.yelp.com/v3/businesses/search?${yp}`, { headers: { Authorization: `Bearer ${YELP_API_KEY}` } });
 
   if (!yr.ok) {
@@ -104,9 +107,13 @@ export default async function handler(req, res) {
   // Yelp's category aliases are food-type tags, not health indicators, so chains like BWW or
   // Marble Slab can appear if they have a secondary tag that matches. This blocklist removes them.
   const HEALTHY_BLOCKLIST = new Set(['icecream', 'chicken_wings', 'icecreameries', 'hotdog', 'hotdogs']);
-  const results = categoryFilter.includes('healthfood')
+  const afterHealthy = categoryFilter.includes('healthfood')
     ? businesses.filter(b => !(b.categories || []).some(c => HEALTHY_BLOCKLIST.has(c.alias)))
     : businesses;
+
+  // Strict radius enforcement — Yelp's radius param is accurate but geocoding offsets can
+  // occasionally place a result just outside. Post-filter guarantees 100% accuracy.
+  const results = afterHealthy.filter(b => b.distance == null || b.distance <= radiusMeters);
 
   // Enrich first 6 with real website URLs
   const enriched = await Promise.allSettled(

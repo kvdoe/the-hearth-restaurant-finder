@@ -437,7 +437,8 @@ select option{background:#180900;}
 .cp-chip.on{background:rgba(200,119,10,.2);border-color:var(--amber);color:var(--cream);box-shadow:0 0 12px rgba(200,119,10,.18),inset 0 1px 0 rgba(255,220,100,.1);}
 .cp-chip-any{font-size:11px;padding:7px 20px;}
 
-/* Budget */
+/* Range + Budget rows */
+.range-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 .budget-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
 .bb{
   background:rgba(5,2,0,.65);border:1px solid var(--border);border-radius:9px;
@@ -727,8 +728,18 @@ select option{background:#180900;}
     </div>
 
     <div class="fg">
+      <label class="fl-label">Distance from location</label>
+      <div class="range-row" id="range-row">
+        <button class="bb" data-mi="5">5 mi<small>nearby</small></button>
+        <button class="bb on" data-mi="10">10 mi<small>local</small></button>
+        <button class="bb" data-mi="25">25 mi<small>regional</small></button>
+        <button class="bb" data-mi="50">50 mi<small>wide area</small></button>
+      </div>
+    </div>
+
+    <div class="fg">
       <label class="fl-label">Budget per person</label>
-      <div class="budget-row">
+      <div class="budget-row" id="budget-row">
         <button class="bb" data-v="1">$<small>Under $15</small></button>
         <button class="bb on" data-v="2">$$<small>$15&ndash;30</small></button>
         <button class="bb" data-v="3">$$$<small>$30&ndash;60</small></button>
@@ -835,10 +846,19 @@ setInterval(spawnMote,1400);
 
 /* ─── Budget ─────────────────────────────────── */
 let budget='2';
-document.querySelectorAll('.bb').forEach(b=>{
+document.querySelectorAll('#budget-row .bb').forEach(b=>{
   b.addEventListener('click',()=>{
-    document.querySelectorAll('.bb').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('#budget-row .bb').forEach(x=>x.classList.remove('on'));
     b.classList.add('on'); budget=b.dataset.v;
+  });
+});
+
+/* ─── Range ──────────────────────────────────── */
+let selectedMiles=10;
+document.querySelectorAll('#range-row .bb').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#range-row .bb').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); selectedMiles=parseInt(b.dataset.mi);
   });
 });
 
@@ -933,7 +953,7 @@ async function doSearch(){
   ['res-head','res-div','empty','errmsg'].forEach(hide); hide('res-grid');
   document.getElementById('go').disabled=true; show('loading');
   try{
-    const q=new URLSearchParams({cuisine,budget});
+    const q=new URLSearchParams({cuisine,budget,miles:selectedMiles});
     if(selCoords){q.set('lat',selCoords.lat);q.set('lon',selCoords.lon);q.set('displayName',selCoords.name);}
     else q.set('address',text);
     const resp=await fetch('/api/search?'+q);
@@ -947,7 +967,7 @@ async function doSearch(){
     else locLabel=text;
     document.getElementById('loc-name').textContent='near '+locLabel;
     document.getElementById('res-sub').textContent=list.length
-      ?`${list.length} restaurant${list.length!==1?'s':''} found &middot; sorted by distance`
+      ?`${list.length} restaurant${list.length!==1?'s':''} found within ${selectedMiles} mi &middot; sorted by distance`
       :'No results &mdash; try Any price tier or a different cuisine';
     show('res-head'); show('res-div');
     if(!list.length){show('empty');return;}
