@@ -423,9 +423,19 @@ select option{background:#180900;}
 .ac-search-as{border-top:1px solid rgba(200,119,10,.15)!important;}
 .ac-search-as .ac-main{font-style:italic;color:var(--crm2)!important;}
 
-/* Select arrow */
-.sel-wrap{position:relative;}
-.sel-wrap::after{content:'▾';position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--amber);pointer-events:none;font-size:16px;}
+/* Cuisine chip picker */
+.cp-grid{display:flex;flex-direction:column;gap:10px;}
+.cp-section-label{display:block;font-family:'Cinzel',serif;font-size:7.5px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.cp-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.cp-chip{
+  background:rgba(5,2,0,.65);border:1px solid var(--border);border-radius:20px;
+  padding:6px 13px;color:var(--crm2);
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;
+  cursor:pointer;transition:all .18s;user-select:none;white-space:nowrap;
+}
+.cp-chip:hover{border-color:rgba(200,119,10,.5);color:var(--cream);background:rgba(200,119,10,.08);transform:translateY(-1px);}
+.cp-chip.on{background:rgba(200,119,10,.2);border-color:var(--amber);color:var(--cream);box-shadow:0 0 12px rgba(200,119,10,.18),inset 0 1px 0 rgba(255,220,100,.1);}
+.cp-chip-any{font-size:11px;padding:7px 20px;}
 
 /* Budget */
 .budget-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
@@ -646,41 +656,73 @@ select option{background:#180900;}
     </div>
 
     <div class="fg">
-      <label class="fl-label" for="cuisine">Cuisine</label>
-      <div class="sel-wrap">
-        <select id="cuisine">
-          <option value="restaurants">Any Cuisine</option>
-          <option value="salad,healthfood,acaibowls,wraps,poke,mediterranean">Healthy &amp; Fresh</option>
-          <option value="cafes,coffee">Cafes &amp; Coffee</option>
-          <option value="breakfast_brunch">Breakfast &amp; Brunch</option>
-          <option value="bakeries">Bakeries</option>
-          <option value="newamerican,tradamerican">American</option>
-          <option value="italian">Italian</option>
-          <option value="mexican">Mexican</option>
-          <option value="chinese">Chinese</option>
-          <option value="japanese">Japanese</option>
-          <option value="sushi">Sushi</option>
-          <option value="indpak">Indian</option>
-          <option value="thai">Thai</option>
-          <option value="mediterranean">Mediterranean</option>
-          <option value="french">French</option>
-          <option value="korean">Korean</option>
-          <option value="vietnamese">Vietnamese</option>
-          <option value="greek">Greek</option>
-          <option value="pizza">Pizza</option>
-          <option value="burgers">Burgers</option>
-          <option value="seafood">Seafood</option>
-          <option value="steak">Steak</option>
-          <option value="vegetarian">Vegetarian</option>
-          <option value="vegan">Vegan</option>
-          <option value="sandwiches">Sandwiches</option>
-          <option value="bbq">BBQ</option>
-          <option value="spanish">Spanish</option>
-          <option value="mideastern">Middle Eastern</option>
-          <option value="caribbean">Caribbean</option>
-          <option value="ramen">Ramen</option>
-          <option value="tacos">Tacos</option>
-        </select>
+      <label class="fl-label">Cuisine</label>
+      <div class="cp-grid" id="cp-grid">
+        <div>
+          <div class="cp-chips">
+            <button class="cp-chip cp-chip-any on" data-v="restaurants">Any Cuisine</button>
+          </div>
+        </div>
+        <div>
+          <span class="cp-section-label">Morning</span>
+          <div class="cp-chips">
+            <button class="cp-chip" data-v="breakfast_brunch">Breakfast &amp; Brunch</button>
+            <button class="cp-chip" data-v="cafes,coffee">Cafes &amp; Coffee</button>
+            <button class="cp-chip" data-v="bakeries">Bakeries</button>
+          </div>
+        </div>
+        <div>
+          <span class="cp-section-label">Healthy</span>
+          <div class="cp-chips">
+            <button class="cp-chip" data-v="salad,healthfood,acaibowls,poke,juicebars">Healthy &amp; Fresh</button>
+            <button class="cp-chip" data-v="vegetarian">Vegetarian</button>
+            <button class="cp-chip" data-v="vegan">Vegan</button>
+          </div>
+        </div>
+        <div>
+          <span class="cp-section-label">American &amp; Comfort</span>
+          <div class="cp-chips">
+            <button class="cp-chip" data-v="newamerican,tradamerican">American</button>
+            <button class="cp-chip" data-v="pizza">Pizza</button>
+            <button class="cp-chip" data-v="burgers">Burgers</button>
+            <button class="cp-chip" data-v="sandwiches">Sandwiches</button>
+            <button class="cp-chip" data-v="bbq">BBQ</button>
+            <button class="cp-chip" data-v="steak">Steak</button>
+            <button class="cp-chip" data-v="seafood">Seafood</button>
+          </div>
+        </div>
+        <div>
+          <span class="cp-section-label">Asian</span>
+          <div class="cp-chips">
+            <button class="cp-chip" data-v="chinese">Chinese</button>
+            <button class="cp-chip" data-v="japanese">Japanese</button>
+            <button class="cp-chip" data-v="sushi">Sushi</button>
+            <button class="cp-chip" data-v="thai">Thai</button>
+            <button class="cp-chip" data-v="korean">Korean</button>
+            <button class="cp-chip" data-v="vietnamese">Vietnamese</button>
+            <button class="cp-chip" data-v="ramen">Ramen</button>
+            <button class="cp-chip" data-v="indpak">Indian</button>
+          </div>
+        </div>
+        <div>
+          <span class="cp-section-label">Latin &amp; Caribbean</span>
+          <div class="cp-chips">
+            <button class="cp-chip" data-v="mexican">Mexican</button>
+            <button class="cp-chip" data-v="tacos">Tacos</button>
+            <button class="cp-chip" data-v="spanish">Spanish</button>
+            <button class="cp-chip" data-v="caribbean">Caribbean</button>
+          </div>
+        </div>
+        <div>
+          <span class="cp-section-label">European &amp; Mediterranean</span>
+          <div class="cp-chips">
+            <button class="cp-chip" data-v="italian">Italian</button>
+            <button class="cp-chip" data-v="french">French</button>
+            <button class="cp-chip" data-v="mediterranean">Mediterranean</button>
+            <button class="cp-chip" data-v="greek">Greek</button>
+            <button class="cp-chip" data-v="mideastern">Middle Eastern</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -800,6 +842,15 @@ document.querySelectorAll('.bb').forEach(b=>{
   });
 });
 
+/* ─── Cuisine chips ──────────────────────────── */
+let selectedCuisine='restaurants';
+document.querySelectorAll('#cp-grid .cp-chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    document.querySelectorAll('#cp-grid .cp-chip').forEach(c=>c.classList.remove('on'));
+    chip.classList.add('on'); selectedCuisine=chip.dataset.v;
+  });
+});
+
 /* ─── Autocomplete ───────────────────────────── */
 let selCoords=null, acTimer=null, hiIdx=-1;
 const locInput=document.getElementById('loc-input');
@@ -878,7 +929,7 @@ async function doSearch(){
     locInput.style.borderColor='rgba(190,50,30,.65)';
     locInput.focus(); setTimeout(()=>{locInput.style.borderColor='';},1800); return;
   }
-  const cuisine=document.getElementById('cuisine').value;
+  const cuisine=selectedCuisine;
   ['res-head','res-div','empty','errmsg'].forEach(hide); hide('res-grid');
   document.getElementById('go').disabled=true; show('loading');
   try{
