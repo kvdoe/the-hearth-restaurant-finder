@@ -3,7 +3,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { lat, lon, address, displayName, cuisine, budget, miles } = req.query;
+  const { lat, lon, address, displayName, cuisine, budget, miles, offset, minRating } = req.query;
 
   const YELP_API_KEY   = process.env.YELP_API_KEY;
   const MAPBOX_TOKEN   = process.env.MAPBOX_TOKEN;
@@ -83,16 +83,29 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── Exact price tier ───────────────────────────────────────────────────────
+  // ── Filters ────────────────────────────────────────────────────────────────
   const priceMap       = { '1':'1', '2':'2', '3':'3', '4':'4', any:'1,2,3,4' };
   const priceFilter    = priceMap[budget] || '1,2,3,4';
   const categoryFilter = cuisine || 'restaurants';
 
-  // ── Radius (Yelp hard-caps at 40 000 m ≈ 24.85 mi) ────────────────────────
+  // Yelp hard-caps radius at 40 000 m (≈ 24.85 mi); clamp silently.
   const radiusMeters = Math.min(Math.round((parseFloat(miles) || 10) * 1609.344), 40000);
 
+  // yelpOffset tracks position in Yelp's unfiltered result set so Show More
+  // never re-fetches pages already processed.
+  const yelpOffset = Math.max(0, parseInt(offset) || 0);
+
   // ── Yelp search ────────────────────────────────────────────────────────────
-  const yp = new URLSearchParams({ latitude: searchLat, longitude: searchLon, categories: categoryFilter, price: priceFilter, sort_by: 'distance', limit: '20', radius: String(radiusMeters) });
+  const yp = new URLSearchParams({
+    latitude:   searchLat,
+    longitude:  searchLon,
+    categories: categoryFilter,
+    price:      priceFilter,
+    sort_by:    'distance',
+    limit:      '20',
+    radius:     String(radiusMeters),
+    offset:     String(yelpOffset),
+  });
   const yr = await fetch(`https://api.yelp.com/v3/businesses/search?${yp}`, { headers: { Authorization: `Bearer ${YELP_API_KEY}` } });
 
   if (!yr.ok) {
@@ -103,19 +116,27 @@ export default async function handler(req, res) {
   const yd         = await yr.json();
   const businesses = yd.businesses || [];
 
-  // For healthy searches, strip results whose Yelp categories include non-healthy food types.
-  // Yelp's category aliases are food-type tags, not health indicators, so chains like BWW or
-  // Marble Slab can appear if they have a secondary tag that matches. This blocklist removes them.
+  // Healthy blocklist: category aliases are food-type tags, not health indicators.
   const HEALTHY_BLOCKLIST = new Set(['icecream', 'chicken_wings', 'icecreameries', 'hotdog', 'hotdogs']);
   const afterHealthy = categoryFilter.includes('healthfood')
     ? businesses.filter(b => !(b.categories || []).some(c => HEALTHY_BLOCKLIST.has(c.alias)))
     : businesses;
 
-  // Strict radius enforcement — Yelp's radius param is accurate but geocoding offsets can
-  // occasionally place a result just outside. Post-filter guarantees 100% accuracy.
-  const results = afterHealthy.filter(b => b.distance == null || b.distance <= radiusMeters);
+  // Strict radius: exclude any result with no distance data or outside the radius.
+  const afterRadius = afterHealthy.filter(b => b.distance != null && b.distance <= radiusMeters);
 
-  // Enrich first 6 with real website URLs
+  // Minimum star rating (Yelp has no native filter for this).
+  const minRatingVal = parseFloat(minRating) || 0;
+  const results = minRatingVal > 0
+    ? afterRadius.filter(b => (b.rating || 0) >= minRatingVal)
+    : afterRadius;
+
+  // nextOffset advances past the Yelp page we just fetched (pre-filter count),
+  // so subsequent Show More calls don't overlap.
+  const nextOffset = yelpOffset + businesses.length;
+  const hasMore    = nextOffset < (yd.total || 0);
+
+  // Enrich first 6 results with real website URLs via detail endpoint.
   const enriched = await Promise.allSettled(
     results.slice(0, 6).map(async b => {
       try {
@@ -130,7 +151,9 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     restaurants: results.map(b => enrichedMap[b.id] || b),
-    total:       yd.total || results.length,
-    geocoded:    resolvedName
+    total:       yd.total || 0,
+    hasMore,
+    nextOffset,
+    geocoded:    resolvedName,
   });
 }

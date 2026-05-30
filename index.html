@@ -476,6 +476,16 @@ select option{background:#180900;}
 #go:active{transform:translateY(0);}
 #go:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 
+/* Show More */
+#show-more{
+  padding:12px 40px;
+  background:rgba(5,2,0,.65);border:1px solid var(--border);border-radius:11px;
+  color:var(--crm2);font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  cursor:pointer;transition:all .22s;
+}
+#show-more:hover{border-color:rgba(200,119,10,.5);color:var(--cream);background:rgba(200,119,10,.08);}
+#show-more:disabled{opacity:.4;cursor:not-allowed;}
+
 /* ═══════════════════════════════════
    LOADING
 ═══════════════════════════════════ */
@@ -738,6 +748,17 @@ select option{background:#180900;}
     </div>
 
     <div class="fg">
+      <label class="fl-label">Minimum Rating</label>
+      <div class="budget-row" id="rating-row">
+        <button class="bb on" data-r="0">Any<small>all ratings</small></button>
+        <button class="bb" data-r="3">3+ &#9733;<small>and above</small></button>
+        <button class="bb" data-r="3.5">3.5+ &#9733;<small>and above</small></button>
+        <button class="bb" data-r="4">4+ &#9733;<small>and above</small></button>
+        <button class="bb" data-r="4.5">4.5+ &#9733;<small>top rated</small></button>
+      </div>
+    </div>
+
+    <div class="fg">
       <label class="fl-label">Budget per person</label>
       <div class="budget-row" id="budget-row">
         <button class="bb" data-v="1">$<small>Under $15</small></button>
@@ -766,10 +787,14 @@ select option{background:#180900;}
   <div id="res-div"></div>
   <div id="res-grid"></div>
 
+  <div id="show-more-wrap" style="display:none;width:100%;max-width:980px;text-align:center;margin:4px 0 40px;">
+    <button id="show-more" type="button">Show More Restaurants</button>
+  </div>
+
   <div id="empty">
     <div class="ico">H</div>
     <h3>No Tables Found</h3>
-    <p>Try selecting Any price tier, a different cuisine, or search a nearby area.</p>
+    <p>Try Any price tier, a different cuisine, a wider range, or a lower minimum rating.</p>
   </div>
 </div>
 
@@ -862,6 +887,15 @@ document.querySelectorAll('#range-row .bb').forEach(b=>{
   });
 });
 
+/* ─── Rating ─────────────────────────────────── */
+let selectedRating=0;
+document.querySelectorAll('#rating-row .bb').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#rating-row .bb').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); selectedRating=parseFloat(b.dataset.r);
+  });
+});
+
 /* ─── Cuisine chips ──────────────────────────── */
 let selectedCuisine='restaurants';
 document.querySelectorAll('#cp-grid .cp-chip').forEach(chip=>{
@@ -940,44 +974,86 @@ function starsHtml(r){const f=Math.floor(r),h=r-f>=.5;return'&#9733;'.repeat(f)+
 function mi(m){if(!m&&m!==0)return'';const v=m/1609.344;return v<.1?'< 0.1 mi':v.toFixed(1)+' mi';}
 
 /* ─── Search ─────────────────────────────────── */
-document.getElementById('go').addEventListener('click',doSearch);
-locInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&acDrop.style.display==='none')doSearch();});
+let searchOffset=0, lastQuery=null, searchHasMore=false;
 
-async function doSearch(){
-  const text=locInput.value.trim();
-  if(!text){
-    locInput.style.borderColor='rgba(190,50,30,.65)';
-    locInput.focus(); setTimeout(()=>{locInput.style.borderColor='';},1800); return;
+document.getElementById('go').addEventListener('click',()=>doSearch(false));
+locInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&acDrop.style.display==='none')doSearch(false);});
+document.getElementById('show-more').addEventListener('click',()=>doSearch(true));
+
+async function doSearch(append){
+  const goBtn=document.getElementById('go');
+  const smBtn=document.getElementById('show-more');
+
+  if(!append){
+    const text=locInput.value.trim();
+    if(!text){
+      locInput.style.borderColor='rgba(190,50,30,.65)';
+      locInput.focus(); setTimeout(()=>{locInput.style.borderColor='';},1800); return;
+    }
+    // Snapshot current filters so Show More reuses the exact same search
+    lastQuery={
+      selCoords,text,
+      cuisine:selectedCuisine,budget,miles:selectedMiles,rating:selectedRating
+    };
+    searchOffset=0;
+    ['res-head','res-div','empty','errmsg'].forEach(hide);
+    hide('res-grid'); hide('show-more-wrap');
+    goBtn.disabled=true; show('loading');
+  } else {
+    smBtn.disabled=true; smBtn.textContent='Loading…';
   }
-  const cuisine=selectedCuisine;
-  ['res-head','res-div','empty','errmsg'].forEach(hide); hide('res-grid');
-  document.getElementById('go').disabled=true; show('loading');
+
   try{
-    const q=new URLSearchParams({cuisine,budget,miles:selectedMiles});
-    if(selCoords){q.set('lat',selCoords.lat);q.set('lon',selCoords.lon);q.set('displayName',selCoords.name);}
-    else q.set('address',text);
+    const q=new URLSearchParams({
+      cuisine:lastQuery.cuisine,budget:lastQuery.budget,
+      miles:lastQuery.miles,minRating:lastQuery.rating,
+      offset:searchOffset
+    });
+    if(lastQuery.selCoords){q.set('lat',lastQuery.selCoords.lat);q.set('lon',lastQuery.selCoords.lon);q.set('displayName',lastQuery.selCoords.name);}
+    else q.set('address',lastQuery.text);
+
     const resp=await fetch('/api/search?'+q);
     const data=await resp.json();
-    hide('loading'); document.getElementById('go').disabled=false;
+
+    if(!append){hide('loading'); goBtn.disabled=false;}
+    else{smBtn.disabled=false; smBtn.textContent='Show More Restaurants';}
+
     if(!resp.ok){document.getElementById('errmsg').textContent=data.error||'Something went wrong.';show('errmsg');return;}
+
     const list=data.restaurants||[];
-    let locLabel='your location';
-    if(data.geocoded){locLabel=data.geocoded.split(',').slice(0,3).join(',').trim();}
-    else if(selCoords){locLabel=selCoords.name.split(',').slice(0,2).join(',');}
-    else locLabel=text;
-    document.getElementById('loc-name').textContent='near '+locLabel;
-    document.getElementById('res-sub').textContent=list.length
-      ?`${list.length} restaurant${list.length!==1?'s':''} found within ${selectedMiles} mi &middot; sorted by distance`
-      :'No results &mdash; try Any price tier or a different cuisine';
-    show('res-head'); show('res-div');
-    if(!list.length){show('empty');return;}
-    const grid=document.getElementById('res-grid');
-    grid.innerHTML='';
-    list.forEach((r,i)=>grid.appendChild(makeCard(r,i)));
-    show('res-grid','grid');
-    setTimeout(()=>{document.getElementById('res-head').scrollIntoView({behavior:'smooth',block:'start'});},80);
+    searchOffset=data.nextOffset??searchOffset+list.length;
+    searchHasMore=data.hasMore&&list.length>0;
+
+    if(!append){
+      let locLabel='your location';
+      if(data.geocoded){locLabel=data.geocoded.split(',').slice(0,3).join(',').trim();}
+      else if(lastQuery.selCoords){locLabel=lastQuery.selCoords.name.split(',').slice(0,2).join(',');}
+      else locLabel=lastQuery.text;
+      document.getElementById('loc-name').textContent='near '+locLabel;
+      document.getElementById('res-sub').textContent=list.length
+        ?`${list.length} restaurant${list.length!==1?'s':''} found within ${lastQuery.miles} mi &middot; sorted by distance`
+        :'No results &mdash; try Any price tier, a different cuisine, or a wider range';
+      show('res-head'); show('res-div');
+      if(!list.length){show('empty'); document.getElementById('show-more-wrap').style.display='none'; return;}
+      const grid=document.getElementById('res-grid');
+      grid.innerHTML='';
+      list.forEach((r,i)=>grid.appendChild(makeCard(r,i)));
+      show('res-grid','grid');
+      setTimeout(()=>{document.getElementById('res-head').scrollIntoView({behavior:'smooth',block:'start'});},80);
+    } else {
+      if(!list.length){searchHasMore=false;}
+      else{
+        const grid=document.getElementById('res-grid');
+        const base=grid.children.length;
+        list.forEach((r,i)=>grid.appendChild(makeCard(r,base+i)));
+      }
+    }
+
+    document.getElementById('show-more-wrap').style.display=searchHasMore?'block':'none';
+
   }catch(err){
-    hide('loading'); document.getElementById('go').disabled=false;
+    if(!append){hide('loading'); goBtn.disabled=false;}
+    else{smBtn.disabled=false; smBtn.textContent='Show More Restaurants';}
     document.getElementById('errmsg').textContent='Network error &mdash; please check your connection.';
     show('errmsg');
   }
