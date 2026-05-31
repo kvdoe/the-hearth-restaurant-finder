@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
 /* ═══════════════════════════════════
    VARIABLES
@@ -162,7 +164,7 @@ body{
    FLOOR + RUG
 ═══════════════════════════════════ */
 #floor{
-  position:fixed;bottom:0;left:0;right:0;height:90px;
+  position:fixed;bottom:80px;left:0;right:0;height:90px;
   z-index:1;pointer-events:none;
   background:
     repeating-linear-gradient(90deg,transparent,transparent 62px,rgba(0,0,0,.18) 62px,rgba(0,0,0,.18) 64px),
@@ -171,7 +173,7 @@ body{
   box-shadow:inset 0 6px 20px rgba(0,0,0,.55);
 }
 #rug{
-  position:fixed;bottom:52px;left:50%;transform:translateX(-50%);
+  position:fixed;bottom:132px;left:50%;transform:translateX(-50%);
   width:min(560px,75vw);height:55px;
   z-index:2;pointer-events:none;border-radius:50%;
   background:radial-gradient(ellipse at 50% 50%,rgba(140,18,18,.5),rgba(100,8,8,.35) 35%,rgba(80,35,5,.25) 65%,transparent);
@@ -195,7 +197,7 @@ body{
    FIREPLACE
 ═══════════════════════════════════ */
 #fp{
-  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
   width:min(720px,99vw);z-index:4;pointer-events:none;user-select:none;
 }
 #fp::before{
@@ -305,7 +307,7 @@ body{
 #app{
   position:relative;z-index:5;
   min-height:100vh;
-  padding:0 20px 360px;
+  padding:0 20px 428px;
   display:flex;flex-direction:column;align-items:center;
 }
 header{text-align:center;padding:200px 20px 32px;}
@@ -571,6 +573,7 @@ select option{background:#180900;}
 .chip-dist{border-color:rgba(100,210,150,.22);color:#90D4A8;background:rgba(100,210,150,.07);}
 .chip-open{border-color:rgba(90,200,130,.35);color:#7DCCA8;background:rgba(90,200,130,.1);}
 .chip-closed{border-color:rgba(200,60,40,.3);color:#FF9980;background:rgba(200,60,40,.1);}
+.chip-hours{border-color:rgba(200,160,60,.2);color:var(--muted);background:rgba(200,160,60,.05);}
 .card-addr{font-family:'Outfit',sans-serif;font-size:13px;font-weight:300;color:var(--muted);margin-bottom:14px;line-height:1.5;flex:1;}
 .card-btns{display:flex;gap:8px;}
 .btn-yelp,.btn-web{
@@ -595,6 +598,8 @@ select option{background:#180900;}
 /* App reveal after portal */
 #app{opacity:0;transform:translateY(36px);}
 #app.visible{opacity:1;transform:none;transition:opacity .9s ease,transform .9s cubic-bezier(.22,1,.36,1);}
+/* Decorative elements hidden until portal exits */
+#grain,#vignette,#stars,#win,#shelf-l,#shelf-r,#lan-l,#lan-r,#floor,#rug,#fp,#embers,#moats{opacity:0;}
 
 @media(max-width:640px){
   #search-card{padding:24px 18px;}
@@ -641,7 +646,7 @@ select option{background:#180900;}
 
 /* Mobile bottom nav */
 #bottom-nav{
-  display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;
+  display:flex;position:fixed;bottom:0;left:0;right:0;z-index:50;
   background:rgba(6,2,0,.98);border-top:1px solid rgba(200,119,10,.3);
   padding-bottom:env(safe-area-inset-bottom,0);
   box-shadow:0 -4px 20px rgba(0,0,0,.6);
@@ -677,12 +682,110 @@ select option{background:#180900;}
 #favs-empty h3{font-family:'Cinzel',serif;font-size:20px;color:var(--cream);margin-bottom:10px;letter-spacing:.04em;}
 #favs-empty p{font-family:'Outfit',sans-serif;font-size:15px;color:var(--crm2);line-height:1.6;}
 
+#saved-btn{display:none;}
+body{padding-bottom:68px;}
+/* Desktop tab bar */
+@media(min-width:641px){
+  #bottom-nav{max-width:480px;left:50%;transform:translateX(-50%);border-radius:16px 16px 0 0;border-left:1px solid rgba(200,119,10,.3);border-right:1px solid rgba(200,119,10,.3);}
+  .tab-btn{font-size:13px;padding:14px 0 12px;}
+  .tab-btn .tab-ico svg{width:24px;height:24px;}
+}
 @media(max-width:640px){
-  #bottom-nav{display:flex;}
-  #saved-btn{display:none;}
-  body{padding-bottom:68px;}
   #favs-overlay{padding:80px 16px 100px;}
   #favs-grid{grid-template-columns:1fr;}
+}
+/* ═══ AUTH MODAL ═══ */
+#auth-overlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;padding:20px;
+}
+#auth-overlay.open{display:flex;}
+#auth-box{
+  width:100%;max-width:420px;
+  background:linear-gradient(155deg,rgba(28,14,3,.99),rgba(10,4,1,.99));
+  border:1px solid rgba(200,119,10,.3);border-radius:18px;
+  padding:36px 32px 32px;position:relative;
+  box-shadow:0 24px 80px rgba(0,0,0,.85),inset 0 1px 0 rgba(220,170,80,.12);
+}
+.auth-logo{text-align:center;margin-bottom:20px;}
+.auth-logo-icon{width:44px;height:44px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;}
+.auth-title{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--cream);letter-spacing:.05em;text-align:center;}
+.auth-sub{font-family:'Outfit',sans-serif;font-size:13px;color:var(--crm2);text-align:center;margin-top:6px;}
+.auth-tabs{display:flex;gap:0;margin:22px 0 20px;border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.auth-tab{
+  flex:1;padding:10px;background:none;border:none;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;
+  color:var(--muted);cursor:pointer;transition:all .18s;
+}
+.auth-tab.active{background:rgba(200,119,10,.18);color:var(--cream);}
+.auth-field{margin-bottom:14px;}
+.auth-field label{display:block;font-family:'Cinzel',serif;font-size:8px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--crm2);margin-bottom:6px;}
+.auth-field input{
+  width:100%;background:rgba(5,2,0,.7);border:1px solid var(--border);border-radius:9px;
+  padding:12px 14px;color:var(--cream);font-family:'Outfit',sans-serif;font-size:15px;
+  outline:none;transition:border-color .2s;
+}
+.auth-field input:focus{border-color:rgba(200,119,10,.6);}
+.auth-field input::placeholder{color:var(--muted);font-weight:300;}
+.auth-submit{
+  width:100%;margin-top:6px;padding:13px;
+  background:linear-gradient(100deg,#A05A05,#E85D04 45%,#C87A0A);
+  border:none;border-radius:9px;color:#180800;
+  font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:.08em;
+  cursor:pointer;transition:all .25s;
+  box-shadow:0 4px 20px rgba(232,93,4,.35);
+}
+.auth-submit:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(232,93,4,.5);}
+.auth-submit:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.auth-divider span{font-family:'Outfit',sans-serif;font-size:11px;color:var(--muted);}
+.google-btn{
+  width:100%;padding:12px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:9px;
+  color:var(--cream);font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.google-btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);}
+.auth-err{font-family:'Outfit',sans-serif;font-size:12px;color:#FF8080;margin-top:10px;text-align:center;min-height:18px;}
+#auth-close{
+  position:absolute;top:10px;right:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:50%;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);font-size:20px;cursor:pointer;line-height:1;transition:all .18s;
+}
+#auth-close:hover{color:var(--cream);background:rgba(255,255,255,.12);}
+.auth-skip{display:block;text-align:center;margin-top:14px;font-family:"Outfit",sans-serif;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+.auth-skip:hover{color:var(--crm2);}
+/* Desktop account button - hidden, replaced by bottom tabs */
+#account-btn{display:none;}
+#account-btn:hover{border-color:rgba(200,119,10,.5);color:var(--cream);}
+/* Auth overlay for account tab */
+#account-overlay{
+  display:none;position:fixed;inset:0;z-index:16;overflow-y:auto;
+  background:var(--bg);padding:100px 20px 140px;
+}
+#account-overlay.open{display:block;}
+.acct-hdr{text-align:center;margin-bottom:32px;}
+.acct-hdr h2{font-family:'Cinzel',serif;font-size:clamp(20px,4vw,28px);font-weight:600;color:var(--cream);letter-spacing:.05em;}
+.acct-hdr p{font-family:'Outfit',sans-serif;font-size:14px;color:var(--crm2);margin-top:6px;}
+.acct-info{max-width:440px;margin:0 auto;background:rgba(28,14,3,.8);border:1px solid var(--border);border-radius:14px;padding:28px;}
+.acct-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--ember));display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:#180800;margin:0 auto 16px;}
+.acct-name{font-family:'Cinzel',serif;font-size:18px;color:var(--cream);text-align:center;letter-spacing:.04em;}
+.acct-email{font-family:'Outfit',sans-serif;font-size:13px;color:var(--crm2);text-align:center;margin-top:4px;}
+.acct-username{font-family:'Outfit',sans-serif;font-size:12px;color:var(--muted);text-align:center;margin-top:2px;}
+.acct-signout{display:block;margin:24px auto 0;padding:10px 28px;background:rgba(200,60,40,.12);border:1px solid rgba(200,60,40,.3);border-radius:9px;color:#FF9980;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;}
+.acct-signout:hover{background:rgba(200,60,40,.22);}
+@media(max-width:640px){
+  #account-btn{display:none;}
+  #auth-overlay{align-items:flex-start;overflow-y:auto;padding:12px 12px 100px;}
+  #auth-box{padding:22px 18px 20px;margin-top:8px;width:100%;}
+  .auth-field{margin-bottom:10px;}
+  .auth-field input{padding:10px 12px;font-size:16px;}
+  .auth-tabs{margin:14px 0 14px;}
+  .auth-logo{margin-bottom:12px;}
+  .auth-divider{margin:12px 0;}
+  #account-overlay{padding:60px 16px 100px;}
 }
   </style>
 </head>
@@ -710,8 +813,8 @@ select option{background:#180900;}
   #pc{position:absolute;inset:0;width:100%;height:100%;z-index:1;}
   #pb{position:absolute;border-radius:50%;background:#000;z-index:3;pointer-events:none;opacity:0;}
   #pb.expand{opacity:1;transition:transform .8s cubic-bezier(.55,0,.85,.55);transform:scale(80);}
-  #pl-wrap{position:absolute;z-index:5;pointer-events:none;text-align:center;padding:0 24px;width:100%;}
-  #pl-title{font-family:'Cinzel',serif;font-size:clamp(34px,8vw,80px);font-weight:700;color:#F0DFC0;letter-spacing:.07em;text-shadow:0 0 28px rgba(235,185,55,1),0 0 55px rgba(210,130,15,.8);animation:plp 2.2s ease-in-out infinite;user-select:none;line-height:1.1;}
+  #pl-wrap{position:absolute;z-index:5;pointer-events:none;text-align:center;padding:0 24px;width:100%;max-width:min(720px,90vw);margin-left:auto;margin-right:auto;}
+  #pl-title{font-family:'Cinzel',serif;font-size:clamp(28px,5.5vw,64px);font-weight:700;color:#F0DFC0;letter-spacing:.07em;text-shadow:0 0 28px rgba(235,185,55,1),0 0 55px rgba(210,130,15,.8);animation:plp 2.2s ease-in-out infinite;user-select:none;line-height:1.1;}
   #pl-title span{color:#E09020;}
   #pl-sub{font-family:'Outfit',sans-serif;font-size:clamp(11px,2vw,16px);font-weight:300;color:rgba(220,185,100,.7);letter-spacing:.14em;margin-top:12px;user-select:none;}
   #pl-bar-wrap{width:min(200px,55vw);height:3px;background:rgba(255,200,80,.15);border-radius:3px;margin:24px auto 0;overflow:hidden;}
@@ -730,7 +833,7 @@ select option{background:#180900;}
       pf=document.getElementById('pf'),lw=document.getElementById('pl-wrap'),ctx=cv.getContext('2d');
   var W,H,CX,CY,R,vigCache=null;
   function resize(){
-    W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;CX=W/2;CY=H/2;R=Math.min(W,H)*.34;
+    W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;CX=W/2;CY=H/2;R=Math.min(W,H)*.48;
     var d=Math.round(R*1.82)+'px';pb.style.width=d;pb.style.height=d;
     pb.style.left=Math.round(CX-R*.91)+'px';pb.style.top=Math.round(CY-R*.91)+'px';vigCache=null;
   }
@@ -798,7 +901,7 @@ select option{background:#180900;}
     cancelAnimationFrame(rafId);lw.classList.add('hide');pf.classList.add('flash');
     setTimeout(function(){pb.classList.add('expand');},110);
     setTimeout(function(){ov.classList.add('bye');},380);
-    setTimeout(function(){ov.remove();document.body.classList.add('portal-done');document.getElementById('app').classList.add('visible');},1050);
+    setTimeout(function(){ov.remove();document.body.classList.add('portal-done');document.getElementById('app').classList.add('visible');var decs=['grain','vignette','stars','win','shelf-l','shelf-r','lan-l','lan-r','floor','rug','fp','embers','moats'];decs.forEach(function(id){var el=document.getElementById(id);if(el){el.style.transition='opacity 0.7s ease';el.style.opacity=(id==='grain')?'0.038':'1';}});},1050);
   },3400);
 })();
 </script>
@@ -1379,6 +1482,17 @@ function updateFavCount(){
 }
 
 let favsOpen=false;
+let accountOpen=false;
+function openAccount(){
+  accountOpen=true;
+  document.getElementById('account-overlay').classList.add('open');
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab==='account');});
+  updateAuthUI(_currentUser);
+}
+function closeAccount(){
+  accountOpen=false;
+  document.getElementById('account-overlay').classList.remove('open');
+}
 function openFavs(){
   favsOpen=true;
   document.getElementById('favs-overlay').classList.add('open');
@@ -1398,21 +1512,174 @@ function renderFavs(){
   empty.style.display=favs.length?'none':'block';
   favs.forEach((r,i)=>grid.appendChild(makeCard(r,i)));
 }
+/* ─── Supabase Auth ─────────────────────────────────────────────────────── */
+const _sb = supabase.createClient(
+  'https://pbwlfdtzbhavqfxzifva.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBid2xmZHR6YmhhdnFmeHppZnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMjU1OTksImV4cCI6MjA5NTgwMTU5OX0.oNOk4aDZdqTxHaW-dVDGrqK-KUtGJzj-BxF21_7Iy4w'
+);
+let _currentUser = null;
+_sb.auth.onAuthStateChange(function(event, session){
+  _currentUser = session ? session.user : null;
+  updateAuthUI(_currentUser);
+});
+
+function resetAuthModal(){
+  setAuthErr('');setAuthBtnsDisabled(false);
+  ['su-name','su-email','su-user','su-pass','si-email','si-pass'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var sc=document.getElementById('signup-confirm');if(sc)sc.style.display='none';
+  var sf=document.getElementById('signup-form');if(sf)sf.style.display='none';
+  var af=document.getElementById('signin-form');if(af)af.style.display='';
+  document.querySelectorAll('.auth-tab').forEach(function(t){t.classList.toggle('active',t.dataset.form==='signin');});
+}
+function showAuthModal(){ resetAuthModal(); document.getElementById('auth-overlay').classList.add('open'); }
+function hideAuthModal(){ resetAuthModal(); document.getElementById('auth-overlay').classList.remove('open'); }
+
+function setAuthErr(msg){ var el=document.getElementById('auth-err'); if(el) el.textContent=msg; }
+
+function setAuthBtnsDisabled(on){
+  ['signin-btn','signup-btn','google-btn'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.disabled=on;
+  });
+}
+
+function handleAuthSuccess(){
+  localStorage.setItem('fq-logged-in','1');
+  hideAuthModal();
+  closeAccount();
+}
+
+function handleAuthErr(e){
+  var msg=(e&&e.message)||'Something went wrong.';
+  if(msg.includes('Invalid login credentials')) msg='Incorrect email or password.';
+  else if(msg.includes('already registered')||msg.includes('already been registered')) msg='An account with that email already exists.';
+  else if(msg.includes('Password should be')) msg='Password must be at least 6 characters.';
+  else if(msg.includes('Unable to validate')) msg='Please enter a valid email address.';
+  else if(msg.includes('cancelled')||msg.includes('closed')) msg='Sign-in cancelled.';
+  setAuthErr(msg);
+  setAuthBtnsDisabled(false);
+}
+
+function updateAuthUI(user){
+  var label=document.getElementById('acct-btn-label');
+  var dispName=user?(user.user_metadata&&user.user_metadata.full_name?user.user_metadata.full_name:user.email.split('@')[0]):'Sign In';
+  if(label) label.textContent=dispName;
+  if(user){
+    var initial=dispName[0].toUpperCase();
+    var av=document.getElementById('acct-avatar'); if(av) av.textContent=initial;
+    var an=document.getElementById('acct-name'); if(an) an.textContent=dispName;
+    var ae=document.getElementById('acct-email'); if(ae) ae.textContent=user.email||'—';
+    var au=document.getElementById('acct-username');
+    if(au){var un=(user.user_metadata&&user.user_metadata.username)||'';au.textContent=un?'@'+un:'';}
+  }
+  updateFavCount();
+}
 document.addEventListener('DOMContentLoaded',function(){
+  /* Auth modal tab switching */
+  document.querySelectorAll('.auth-tab').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      document.querySelectorAll('.auth-tab').forEach(function(t){t.classList.remove('active');});
+      tab.classList.add('active');
+      var form=tab.dataset.form;
+      var sc=document.getElementById('signup-confirm');if(sc)sc.style.display='none';
+      document.getElementById('signin-form').style.display=form==='signin'?'':'none';
+      document.getElementById('signup-form').style.display=form==='signup'?'':'none';
+      setAuthErr('');setAuthBtnsDisabled(false);
+    });
+  });
+
+  /* Close auth modal */
+  document.getElementById('auth-close').addEventListener('click',hideAuthModal);
+  document.getElementById('auth-overlay').addEventListener('click',function(e){if(e.target===this)hideAuthModal();});
+  var skipBtn=document.getElementById('auth-skip');
+  if(skipBtn)skipBtn.addEventListener('click',hideAuthModal);
+
+  /* Sign in with email */
+  document.getElementById('signin-btn').addEventListener('click',function(){
+    var email=document.getElementById('si-email').value.trim();
+    var pass=document.getElementById('si-pass').value;
+    if(!email||!pass){setAuthErr('Please fill in all fields.');return;}
+    setAuthBtnsDisabled(true); setAuthErr('');
+    _sb.auth.signInWithPassword({email:email,password:pass})
+      .then(function(r){if(r.error)throw r.error;handleAuthSuccess();})
+      .catch(handleAuthErr);
+  });
+
+  /* Sign up with email */
+  document.getElementById('signup-btn').addEventListener('click',function(){
+    var name=document.getElementById('su-name').value.trim();
+    var email=document.getElementById('su-email').value.trim();
+    var username=document.getElementById('su-user').value.trim().replace(/^@/,'');
+    var pass=document.getElementById('su-pass').value;
+    if(!name||!email||!username||!pass){setAuthErr('Please fill in all fields.');return;}
+    setAuthBtnsDisabled(true); setAuthErr('');
+    _sb.auth.signUp({email:email,password:pass,options:{data:{full_name:name,username:username}}})
+      .then(function(r){
+        if(r.error)throw r.error;
+        if(r.data.user&&!r.data.session){
+          var sf=document.getElementById('signup-form');if(sf)sf.style.display='none';
+          var sc=document.getElementById('signup-confirm');
+          var ea=document.getElementById('confirm-email-addr');if(ea)ea.textContent=email;
+          if(sc)sc.style.display='block';
+          setAuthBtnsDisabled(false);
+        }
+        else handleAuthSuccess();
+      }).catch(handleAuthErr);
+  });
+
+
+  /* Sign out */
+  document.getElementById('signout-btn').addEventListener('click',function(){
+    _sb.auth.signOut();
+    localStorage.removeItem('fq-logged-in');
+    closeAccount();
+  });
+
+  /* Desktop account button */
+  var ab=document.getElementById('account-btn');
+  if(ab) ab.addEventListener('click',function(){
+    if(_currentUser){ openAccount(); } else { showAuthModal(); }
+  });
+
   document.querySelectorAll('.tab-btn').forEach(function(btn){
-    btn.addEventListener('click',function(){btn.dataset.tab==='favs'?openFavs():closeFavs();});
+    btn.addEventListener('click',function(){
+      var t=btn.dataset.tab;
+      if(t==='favs') openFavs();
+      else if(t==='account'){ if(_currentUser) openAccount(); else showAuthModal(); }
+      else closeFavs();
+    });
   });
   var sb=document.getElementById('saved-btn');
   if(sb) sb.addEventListener('click',function(){favsOpen?closeFavs():openFavs();});
   updateFavCount();
+  /* Handle OAuth error redirect (e.g. Google Access Blocked) */
+  (function(){
+    var h=window.location.hash,s=window.location.search;
+    var params=new URLSearchParams((h&&h.includes('error'))?h.slice(1):s);
+    var err=params.get('error')||params.get('error_code')||params.get('error_description');
+    if(err){
+      history.replaceState(null,'',window.location.pathname);
+      setTimeout(function(){
+        showAuthModal();
+        var msg=err.includes('access_denied')||err.includes('Access')?
+          'Google blocked that account. Try a different Google account or use email/password below.':
+          'Sign-in failed: '+decodeURIComponent(err).replace(/\+/g,' ');
+        setAuthErr(msg);
+      },300);
+    }
+  })();
+  /* Auto-show login after portal on first visit */
+  setTimeout(function(){
+    if(!_currentUser&&!localStorage.getItem('fq-logged-in')) showAuthModal();
+  },5000);
 });
 /* ─── Card builder ───────────────────────────── */
+const _isMob=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 function makeCard(r,idx){
   const a=document.createElement('div');
   a.className='card'; a.style.cursor='pointer';
   a.style.animationDelay=`${idx*60}ms`;
-  if(r.url) a.addEventListener('click',function(e){
-    if(!e.target.closest('a')&&!e.target.closest('.fav-btn')) window.open(r.url,'_blank','noopener,noreferrer');
+  if(r.url&&!_isMob) a.addEventListener('click',function(e){
+    if(!e.target.closest('a')&&!e.target.closest('.fav-btn')){var dest=(r.website&&!r.website.includes('yelp.com'))?r.website:r.url;if(dest) window.open(dest,'_blank','noopener,noreferrer');}
   });
   const cats=(r.categories||[]).map(c=>c.title).slice(0,2);
   const dist=mi(r.distance);
@@ -1425,6 +1692,7 @@ function makeCard(r,idx){
   const mapsBtn=mapsAddr?`<a class="btn-maps" href="https://www.google.com/maps/search/?api=1&query=${mapsAddr}" target="_blank" rel="noopener noreferrer">Maps</a>`:'';
   const webBtn=(r.website&&!r.website.includes('yelp.com'))
     ?`<a class="btn-web" href="${esc(r.website)}" target="_blank" rel="noopener noreferrer">Website</a>`:'';
+  const yelpTarget=_isMob?'':'target="_blank"';
   a.innerHTML=`${photo}
     <div class="card-body">
       <div class="card-name">${esc(r.name)}</div>
@@ -1437,16 +1705,37 @@ function makeCard(r,idx){
       <div class="chips">
         ${cats.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}
         ${dist?`<span class="chip chip-dist">${dist}</span>`:''}
-        ${r.is_open_now===true?'<span class="chip chip-open">Open Now</span>':r.is_open_now===false?'<span class="chip chip-closed">Closed Now</span>':''}
+        ${r.is_open_now===true?'<span class="chip chip-open">Open Now</span>':r.is_open_now===false?'<span class="chip chip-closed">Closed Now</span>':(!r.is_closed?'<span class="chip chip-hours">Hours Vary</span>':'')}
         ${r.is_closed?'<span class="chip chip-closed">Permanently Closed</span>':''}
       </div>
       <div class="card-addr">${esc(addr)}</div>
       <div class="card-btns">
-        <a class="btn-yelp" href="${esc(r.url||'#')}" target="_blank" rel="noopener noreferrer">Yelp</a>
+        <a class="btn-yelp" href="${esc(r.url||'#')}" ${yelpTarget} rel="noopener">Yelp</a>
         ${webBtn}
         ${mapsBtn}
       </div>
     </div>`;
+
+  // Mobile Yelp: try app scheme, fall back to Google search (avoids CF blank screen)
+  if(_isMob&&r.url){
+    var yb=a.querySelector('.btn-yelp');
+    if(yb){
+      yb.removeAttribute('href');
+      yb.style.cursor='pointer';
+      yb.addEventListener('click',function(e){
+        e.preventDefault();e.stopPropagation();
+        var m=r.url.match(/\/biz\/([^?#/]+)/),alias=m?m[1]:null;
+        var city=r.location?r.location.city||'':'';
+        var googleUrl='https://www.google.com/search?q='+encodeURIComponent((r.name||'')+' '+city+' yelp');
+        if(!alias){window.location.href=googleUrl;return;}
+        var gone=false;
+        function onViz(){if(document.hidden){gone=true;clearTimeout(fb);}else if(gone){document.removeEventListener('visibilitychange',onViz);}}
+        document.addEventListener('visibilitychange',onViz);
+        var fb=setTimeout(function(){document.removeEventListener('visibilitychange',onViz);window.location.href=googleUrl;},1200);
+        window.location.href='yelp:///biz/'+alias;
+      });
+    }
+  }
 
   // Heart / favorite button
   const fb=document.createElement('button');
@@ -1465,14 +1754,73 @@ function makeCard(r,idx){
   return a;
 }
 </script>
+<!-- Desktop account button -->
+<button id="account-btn">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+  <span id="acct-btn-label">Sign In</span>
+</button>
+
+<!-- Auth modal -->
+<div id="auth-overlay">
+  <div id="auth-box">
+    <button id="auth-close" aria-label="Close">&times;</button>
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 40 40" width="44" height="44"><rect width="40" height="40" rx="9" fill="#0C0500"/><rect x="8" y="5" width="3" height="14" rx="1.5" fill="#C8780A"/><rect x="14" y="5" width="3" height="14" rx="1.5" fill="#C8780A"/><rect x="20" y="5" width="3" height="14" rx="1.5" fill="#C8780A"/><path d="M9.5 19 C12 23 19 23 21.5 19" stroke="#C8780A" stroke-width="2.5" fill="none" stroke-linecap="round"/><rect x="13" y="22" width="5" height="13" rx="2.5" fill="#C8780A"/><ellipse cx="30" cy="18" rx="4" ry="6" fill="#E85D04"/><ellipse cx="30" cy="16" rx="2.2" ry="3.5" fill="#FFD060"/></svg>
+      </div>
+      <div class="auth-title">Foodquest</div>
+      <div class="auth-sub">Sign in to save your favorite restaurants</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-form="signin">Sign In</button>
+      <button class="auth-tab" data-form="signup">Create Account</button>
+    </div>
+    <!-- Sign in form -->
+    <div id="signin-form">
+      <div class="auth-field"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" autocomplete="email"/></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="si-pass" placeholder="Your password" autocomplete="current-password"/></div>
+      <button class="auth-submit" id="signin-btn">Sign In</button>
+    </div>
+    <!-- Sign up form -->
+    <div id="signup-form" style="display:none">
+      <div class="auth-field"><label>Full Name</label><input type="text" id="su-name" placeholder="Jane Smith" autocomplete="name"/></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="su-email" placeholder="you@example.com" autocomplete="email"/></div>
+      <div class="auth-field"><label>Username</label><input type="text" id="su-user" placeholder="@foodlover" autocomplete="username"/></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="su-pass" placeholder="At least 6 characters" autocomplete="new-password"/></div>
+      <button class="auth-submit" id="signup-btn">Create Account</button>
+    </div>
+    <div id="signup-confirm" style="display:none;text-align:center;padding:16px 0"><div style="font-size:36px;margin-bottom:10px">&#x1F4E7;</div><div style="font-family:'Cinzel',serif;font-size:16px;color:#F0DFC0;margin-bottom:8px">Check your email!</div><div style="font-family:'Outfit',sans-serif;font-size:13px;color:#C8A87A;line-height:1.6">We sent a confirmation link to<br><strong id="confirm-email-addr" style="color:#E09020"></strong><br><br>Click the link then come back and Sign In.</div></div>
+    <p class="auth-err" id="auth-err"></p>
+
+    <span class="auth-skip" id="auth-skip">Maybe later &mdash; continue browsing</span>
+  </div>
+</div>
+
+<!-- Account overlay (shown when logged in via Account tab) -->
+<div id="account-overlay">
+  <div class="acct-hdr">
+    <h2>Your Account</h2>
+    <p>Manage your Foodquest profile</p>
+  </div>
+  <div class="acct-info">
+    <div class="acct-avatar" id="acct-avatar">?</div>
+    <div class="acct-name" id="acct-name">—</div>
+    <div class="acct-email" id="acct-email">—</div>
+    <div class="acct-username" id="acct-username"></div>
+    <button class="acct-signout" id="signout-btn">Sign Out</button>
+  </div>
+</div>
 <!-- Bottom nav (mobile) + Favorites overlay — both need DOMContentLoaded listeners above -->
 <nav id="bottom-nav">
   <button class="tab-btn active" data-tab="search">
-    <span class="tab-ico">&#128269;</span>Search
+    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6a3 3 0 006 0V2"/><line x1="6" y1="8" x2="6" y2="22"/><line x1="21" y1="2" x2="21" y2="22"/><path d="M15 2a5 5 0 005 5"/></svg></span>Search
   </button>
   <button class="tab-btn" data-tab="favs" style="position:relative">
-    <span class="tab-ico">&#9829;</span>Saved
+    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C10.5 7.5 6 9.5 6 15a6 6 0 0012 0c0-5.5-4.5-7.5-6-13zm0 10.5c0 2-1.5 3-1.5 4.5a1.5 1.5 0 003 0c0-1.5-1.5-2.5-1.5-4.5z"/></svg></span>Saved
     <span class="mob-badge" id="mob-badge"></span>
+  </button>
+  <button class="tab-btn" data-tab="account">
+    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14l-3 8a5 5 0 01-8 0L5 3z"/><line x1="12" y1="15" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg></span>Account
   </button>
 </nav>
 

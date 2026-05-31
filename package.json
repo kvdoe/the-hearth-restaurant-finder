@@ -1,6 +1,11 @@
 {
-  "name": "the-hearth",
+  "name": "foodquest",
   "version": "1.0.0",
   "private": true,
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
 }
