@@ -136,14 +136,18 @@ export default async function handler(req, res) {
   const nextOffset = yelpOffset + businesses.length;
   const hasMore    = nextOffset < (yd.total || 0);
 
-  // Enrich first 6 results with real website URLs via detail endpoint.
+  // Enrich all results via detail endpoint to get website URL and live open/closed status.
+  // All calls fire in parallel so latency is bounded by the slowest single call.
   const enriched = await Promise.allSettled(
-    results.slice(0, 6).map(async b => {
+    results.map(async b => {
       try {
         const dr = await fetch(`https://api.yelp.com/v3/businesses/${b.id}`, { headers: { Authorization: `Bearer ${YELP_API_KEY}` } });
-        if (dr.ok) { const dd = await dr.json(); return { ...b, website: dd.website || null }; }
+        if (dr.ok) {
+          const dd = await dr.json();
+          return { ...b, website: dd.website || null, is_open_now: dd.hours?.[0]?.is_open_now ?? null };
+        }
       } catch (_) {}
-      return { ...b, website: null };
+      return { ...b, website: null, is_open_now: null };
     })
   );
   const enrichedMap = {};

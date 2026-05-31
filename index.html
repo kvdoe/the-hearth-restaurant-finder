@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Hearth &mdash; Find Your Table</title>
+  <title>Foodquest &mdash; Find Your Table</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
 /* ═══════════════════════════════════
    VARIABLES
@@ -211,7 +211,7 @@ body{
   box-shadow:0 -8px 28px rgba(0,0,0,.6),inset 0 2px 6px rgba(255,200,80,.14);
 }
 .fp-mantle::after{
-  content:'— THE HEARTH —';
+  content:'— FOODQUEST —';
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   font-family:'Cinzel',serif;font-size:8px;letter-spacing:5px;
   color:rgba(200,160,60,.38);white-space:nowrap;
@@ -380,20 +380,30 @@ h1 span{color:var(--amb2);}
   background:rgba(5,2,0,.7);
   border:1px solid var(--border);
   border-radius:10px;
-  padding:13px 18px;
+  padding:14px 18px;
   color:var(--cream);
-  font-family:'Cormorant Garamond',serif;font-size:16px;
+  font-family:'Outfit',sans-serif;font-size:16px;font-weight:400;
   outline:none;
   transition:border-color .2s,box-shadow .2s;
   -webkit-appearance:none;appearance:none;
 }
-.inp::placeholder{color:var(--muted);}
+.inp::placeholder{color:var(--muted);font-weight:300;}
 .inp:focus,select:focus{
   border-color:rgba(200,119,10,.58);
   box-shadow:0 0 0 3px rgba(200,119,10,.11);
 }
 .inp.confirmed{border-color:rgba(80,200,130,.48);box-shadow:0 0 0 3px rgba(80,200,130,.09);}
 select option{background:#180900;}
+
+/* My Location button */
+#geo-btn{
+  margin-top:8px;padding:0;background:none;border:none;
+  color:var(--amber);opacity:.65;
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;letter-spacing:.04em;
+  cursor:pointer;transition:opacity .2s;display:inline-flex;align-items:center;gap:4px;
+}
+#geo-btn:hover{opacity:1;}
+#geo-btn:disabled{opacity:.3;cursor:wait;}
 
 /* Autocomplete */
 .ac-wrap{position:relative;}
@@ -430,7 +440,7 @@ select option{background:#180900;}
 .cp-chip{
   background:rgba(5,2,0,.65);border:1px solid var(--border);border-radius:20px;
   padding:6px 13px;color:var(--crm2);
-  font-family:'Cinzel',serif;font-size:10px;letter-spacing:.05em;
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;letter-spacing:.02em;
   cursor:pointer;transition:all .18s;user-select:none;white-space:nowrap;
 }
 .cp-chip:hover{border-color:rgba(200,119,10,.5);color:var(--cream);background:rgba(200,119,10,.08);transform:translateY(-1px);}
@@ -448,7 +458,7 @@ select option{background:#180900;}
 }
 .bb:hover{border-color:rgba(200,119,10,.5);color:var(--cream);background:rgba(200,119,10,.08);transform:translateY(-1px);}
 .bb.on{background:rgba(200,119,10,.2);border-color:var(--amber);color:var(--cream);box-shadow:0 0 16px rgba(200,119,10,.2),inset 0 1px 0 rgba(255,220,100,.15);}
-.bb small{display:block;font-family:'Cormorant Garamond',serif;font-size:9px;color:var(--muted);margin-top:4px;}
+.bb small{display:block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:400;color:var(--muted);margin-top:4px;}
 .bb.on small{color:var(--crm2);}
 .bb-note{font-size:13px;color:var(--muted);font-style:italic;margin-top:8px;text-align:center;}
 
@@ -536,14 +546,15 @@ select option{background:#180900;}
 .card-name{font-family:'Cinzel',serif;font-size:14.5px;font-weight:600;color:var(--cream);margin-bottom:8px;line-height:1.4;letter-spacing:.03em;}
 .card-rating{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px;}
 .stars{color:var(--amb2);font-size:13px;letter-spacing:-1px;}
-.r-num{font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--crm2);font-weight:600;}
-.r-cnt{font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--muted);}
+.r-num{font-family:'Outfit',sans-serif;font-size:14px;color:var(--crm2);font-weight:600;}
+.r-cnt{font-family:'Outfit',sans-serif;font-size:12px;color:var(--muted);}
 .price{margin-left:auto;font-family:'Cinzel',serif;font-size:13px;color:var(--amber);}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
-.chip{font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:20px;border:1px solid rgba(200,119,10,.2);color:var(--crm2);background:rgba(200,119,10,.07);}
+.chip{font-family:'Outfit',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid rgba(200,119,10,.2);color:var(--crm2);background:rgba(200,119,10,.07);}
 .chip-dist{border-color:rgba(100,210,150,.22);color:#90D4A8;background:rgba(100,210,150,.07);}
+.chip-open{border-color:rgba(90,200,130,.35);color:#7DCCA8;background:rgba(90,200,130,.1);}
 .chip-closed{border-color:rgba(200,60,40,.3);color:#FF9980;background:rgba(200,60,40,.1);}
-.card-addr{font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.45;flex:1;}
+.card-addr{font-family:'Outfit',sans-serif;font-size:13px;font-weight:300;color:var(--muted);margin-bottom:14px;line-height:1.5;flex:1;}
 .card-btns{display:flex;gap:8px;}
 .btn-yelp,.btn-web{
   flex:1;text-align:center;padding:8px 10px;border-radius:8px;
@@ -643,10 +654,9 @@ select option{background:#180900;}
 
 <div id="app">
   <header>
-    <div class="inn-badge">Est. &nbsp;&middot;&nbsp; Fine Dining Since Ever</div>
     <div class="hero-flame" aria-hidden="true"></div>
-    <h1>The <span>Hearth</span></h1>
-    <p class="tagline">Every great meal begins with a warm welcome</p>
+    <h1>Food<span>quest</span></h1>
+    <p class="tagline">Discover your next great meal</p>
     <div class="ornament">&#10022; &nbsp; &#10022; &nbsp; &#10022;</div>
   </header>
 
@@ -664,6 +674,7 @@ select option{background:#180900;}
                aria-haspopup="listbox" aria-expanded="false" aria-controls="ac-drop" />
         <div id="ac-drop" role="listbox"></div>
       </div>
+      <button type="button" id="geo-btn">&#9673; Use My Location</button>
     </div>
 
     <div class="fg">
@@ -799,24 +810,50 @@ select option{background:#180900;}
 </div>
 
 <script>
-/* ─── Bookshelves ────────────────────────────── */
+/* ─── Kitchen utensil shelves ────────────────── */
 (function(){
-  const COLS=['#5A2510','#2A4060','#284828','#603818','#502040','#406050','#5A1818','#203050','#483020','#304838','#602820','#1A3848','#382820','#504010','#3A2848'];
-  function book(){
-    const el=document.createElement('div'); el.className='bk';
-    el.style.cssText=`width:${8+Math.floor(Math.random()*10)}px;height:${24+Math.floor(Math.random()*24)}px;background:${COLS[Math.floor(Math.random()*COLS.length)]};flex-shrink:0;box-shadow:inset 1px 0 0 rgba(255,255,255,.06),inset -1px 0 0 rgba(0,0,0,.3)`;
+  const STEEL=['linear-gradient(180deg,#C8CDD4,#8898A8,#BCC4CC)','linear-gradient(180deg,#D0D4D8,#9098A0,#C4CCCC)'];
+  const COPPER=['linear-gradient(180deg,#D4883A,#9A5820,#C87838)','linear-gradient(180deg,#C07030,#8B4818,#B86828)'];
+  const WOOD=['linear-gradient(180deg,#C8904A,#8B5828,#C08848)','linear-gradient(180deg,#B87840,#784E20,#A87038)'];
+  const IRON=['linear-gradient(180deg,#585E60,#282E30,#404848)','linear-gradient(180deg,#484E50,#202828,#383E40)'];
+  const BRASS=['linear-gradient(180deg,#D4A838,#907018,#C89830)','linear-gradient(180deg,#C89028,#806010,#B88020)'];
+  function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+  function rnd(lo,hi){return lo+Math.floor(Math.random()*(hi-lo+1));}
+  function utensil(){
+    const el=document.createElement('div');
+    const t=Math.random();
+    if(t<0.22){
+      // Knife / skewer — very narrow, tall
+      const w=rnd(2,4),h=rnd(36,55);
+      el.style.cssText=`width:${w}px;height:${h}px;background:${pick(STEEL)};border-radius:${w}px ${w}px 0 0;flex-shrink:0;`;
+    }else if(t<0.44){
+      // Wooden spoon / spatula handle
+      const w=rnd(6,10),h=rnd(28,46);
+      el.style.cssText=`width:${w}px;height:${h}px;background:${pick(WOOD)};border-radius:${w/2}px ${w/2}px 2px 2px;flex-shrink:0;`;
+    }else if(t<0.60){
+      // Ladle / metal spoon — narrow with rounded top
+      const w=rnd(5,8),h=rnd(30,48);
+      el.style.cssText=`width:${w}px;height:${h}px;background:${pick(STEEL)};border-radius:50% 50% 2px 2px / 30% 30% 2px 2px;flex-shrink:0;`;
+    }else if(t<0.75){
+      // Pot / saucepan — wide, shorter
+      const w=rnd(20,32),h=rnd(16,26);
+      el.style.cssText=`width:${w}px;height:${h}px;background:${Math.random()<0.55?pick(IRON):pick(COPPER)};border-radius:3px 3px 6px 6px;flex-shrink:0;box-shadow:inset 0 3px 5px rgba(255,255,255,.07),inset 0 -2px 4px rgba(0,0,0,.45);`;
+    }else if(t<0.87){
+      // Rolling pin / canister — oval
+      const w=rnd(10,18),h=rnd(12,20);
+      el.style.cssText=`width:${w}px;height:${h}px;background:${Math.random()<0.5?pick(WOOD):pick(BRASS)};border-radius:${Math.ceil(h/2)}px;flex-shrink:0;`;
+    }else{
+      // Bottle / oil cruet — classic thin bottle silhouette
+      const w=rnd(8,12),h=rnd(30,44);
+      el.style.cssText=`width:${w}px;height:${h}px;background:${Math.random()<0.5?pick(BRASS):'linear-gradient(180deg,rgba(60,110,60,.75),rgba(30,70,30,.6))'};border-radius:${w/2}px ${w/2}px 2px 2px;flex-shrink:0;box-shadow:inset 2px 0 4px rgba(255,255,255,.08);`;
+    }
     return el;
-  }
-  function bottle(){
-    const BCOLS=['rgba(40,90,40,.7)','rgba(30,50,80,.7)','rgba(80,40,10,.6)','rgba(60,20,20,.7)'];
-    const el=document.createElement('div'); el.className='bk-bottle';
-    el.style.setProperty('--bc',BCOLS[Math.floor(Math.random()*BCOLS.length)]); return el;
   }
   ['shelf-l','shelf-r'].forEach(id=>{
     const u=document.getElementById(id); if(!u)return;
     for(let s=0;s<4;s++){
       const row=document.createElement('div'); row.className='shelf-row';
-      for(let b=0;b<5+Math.floor(Math.random()*4);b++) row.appendChild(Math.random()>.88?bottle():book());
+      for(let b=0;b<rnd(4,7);b++) row.appendChild(utensil());
       u.appendChild(row);
       const p=document.createElement('div'); p.className='shelf-plank'; u.appendChild(p);
     }
@@ -903,6 +940,35 @@ document.querySelectorAll('#cp-grid .cp-chip').forEach(chip=>{
     document.querySelectorAll('#cp-grid .cp-chip').forEach(c=>c.classList.remove('on'));
     chip.classList.add('on'); selectedCuisine=chip.dataset.v;
   });
+});
+
+/* ─── My Location ────────────────────────────── */
+document.getElementById('geo-btn').addEventListener('click',function(){
+  if(!navigator.geolocation){
+    document.getElementById('errmsg').textContent='Geolocation is not supported by your browser.';
+    show('errmsg'); setTimeout(()=>hide('errmsg'),4000); return;
+  }
+  const btn=this;
+  btn.textContent='Locating…'; btn.disabled=true;
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const lat=pos.coords.latitude,lon=pos.coords.longitude;
+      selCoords={lat:String(lat),lon:String(lon),name:'My Location'};
+      locInput.value='My Current Location';
+      locInput.classList.add('confirmed');
+      btn.innerHTML='&#9673; Use My Location'; btn.disabled=false;
+      acHide();
+    },
+    err=>{
+      btn.innerHTML='&#9673; Use My Location'; btn.disabled=false;
+      const msg=err.code===err.PERMISSION_DENIED
+        ?'Location access denied — please allow it in your browser settings.'
+        :'Could not get your location. Please type your address instead.';
+      document.getElementById('errmsg').textContent=msg;
+      show('errmsg'); setTimeout(()=>hide('errmsg'),5000);
+    },
+    {enableHighAccuracy:true,timeout:12000,maximumAge:60000}
+  );
 });
 
 /* ─── Autocomplete ───────────────────────────── */
@@ -1085,7 +1151,8 @@ function makeCard(r,idx){
       <div class="chips">
         ${cats.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}
         ${dist?`<span class="chip chip-dist">${dist}</span>`:''}
-        ${r.is_closed?'<span class="chip chip-closed">Closed</span>':''}
+        ${r.is_open_now===true?'<span class="chip chip-open">Open Now</span>':r.is_open_now===false?'<span class="chip chip-closed">Closed Now</span>':''}
+        ${r.is_closed?'<span class="chip chip-closed">Permanently Closed</span>':''}
       </div>
       <div class="card-addr">${esc(addr)}</div>
       <div class="card-btns">
