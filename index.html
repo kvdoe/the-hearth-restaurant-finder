@@ -613,14 +613,15 @@ select option{background:#180900;}
 /* ═══ FAVORITES ═══ */
 .fav-btn{
   position:absolute;top:10px;right:10px;z-index:3;
-  width:36px;height:36px;border-radius:50%;
-  background:rgba(10,4,1,.78);border:1px solid rgba(200,119,10,.22);
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(10,4,1,.82);border:1.5px solid rgba(200,119,10,.4);
   display:flex;align-items:center;justify-content:center;
-  font-size:18px;line-height:1;cursor:pointer;
-  color:rgba(240,223,192,.4);transition:all .18s;
+  font-size:20px;line-height:1;cursor:pointer;
+  color:rgba(240,223,192,.65);transition:all .18s;
+  box-shadow:0 2px 10px rgba(0,0,0,.5);
 }
-.fav-btn:hover{background:rgba(10,4,1,.96);border-color:rgba(200,119,10,.5);}
-.fav-btn.on{color:#FF6060;border-color:rgba(255,96,96,.45);background:rgba(10,4,1,.9);}
+.fav-btn:hover{background:rgba(10,4,1,.97);border-color:var(--amber);color:var(--cream);transform:scale(1.1);}
+.fav-btn.on{color:#FF5555;border-color:rgba(255,85,85,.55);background:rgba(10,4,1,.95);}
 
 /* Desktop saved button (top-right) */
 #saved-btn{
@@ -641,17 +642,19 @@ select option{background:#180900;}
 /* Mobile bottom nav */
 #bottom-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;
-  background:rgba(8,3,0,.97);border-top:1px solid var(--border);
+  background:rgba(6,2,0,.98);border-top:1px solid rgba(200,119,10,.3);
   padding-bottom:env(safe-area-inset-bottom,0);
+  box-shadow:0 -4px 20px rgba(0,0,0,.6);
 }
 .tab-btn{
-  flex:1;padding:11px 0 9px;background:none;border:none;
-  color:var(--muted);font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;
-  letter-spacing:.05em;cursor:pointer;transition:color .18s;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
+  flex:1;padding:13px 0 11px;background:none;border:none;
+  color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:.06em;cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
 }
-.tab-btn .tab-ico{font-size:20px;line-height:1;}
+.tab-btn .tab-ico{font-size:22px;line-height:1;}
 .tab-btn.active{color:var(--amber);}
+.tab-btn.active .tab-ico{filter:drop-shadow(0 0 6px rgba(200,119,10,.7));}
 .mob-badge{
   background:var(--amber);color:#0C0500;font-size:9px;font-weight:700;
   min-width:16px;height:16px;border-radius:8px;
@@ -1395,11 +1398,14 @@ function renderFavs(){
   empty.style.display=favs.length?'none':'block';
   favs.forEach((r,i)=>grid.appendChild(makeCard(r,i)));
 }
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>btn.dataset.tab==='favs'?openFavs():closeFavs());
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){btn.dataset.tab==='favs'?openFavs():closeFavs();});
+  });
+  var sb=document.getElementById('saved-btn');
+  if(sb) sb.addEventListener('click',function(){favsOpen?closeFavs():openFavs();});
+  updateFavCount();
 });
-document.getElementById('saved-btn').addEventListener('click',()=>favsOpen?closeFavs():openFavs());
-updateFavCount();
 /* ─── Card builder ───────────────────────────── */
 function makeCard(r,idx){
   const a=document.createElement('div');
@@ -1459,29 +1465,27 @@ function makeCard(r,idx){
   return a;
 }
 </script>
-
-<!-- Mobile bottom nav -->
+<!-- Bottom nav (mobile) + Favorites overlay — both need DOMContentLoaded listeners above -->
 <nav id="bottom-nav">
   <button class="tab-btn active" data-tab="search">
     <span class="tab-ico">&#128269;</span>Search
   </button>
   <button class="tab-btn" data-tab="favs" style="position:relative">
-    <span class="tab-ico">&#9825;</span>Saved
+    <span class="tab-ico">&#9829;</span>Saved
     <span class="mob-badge" id="mob-badge"></span>
   </button>
 </nav>
 
-<!-- Favorites overlay -->
 <div id="favs-overlay">
   <div class="favs-hdr">
-    <h2>&#9825; &nbsp;Saved Restaurants</h2>
-    <p>Your favorite spots, all in one place</p>
+    <h2>&#9829;&nbsp; Saved Restaurants</h2>
+    <p>Your favorite spots, saved for later</p>
   </div>
   <div id="favs-grid"></div>
   <div id="favs-empty">
-    <div class="fav-ico">&#9825;</div>
+    <div class="fav-ico">&#9829;</div>
     <h3>Nothing saved yet</h3>
-    <p>Tap the &#9825; on any restaurant card to save it here for later.</p>
+    <p>Tap the &#9829; heart on any restaurant card to save it here.</p>
   </div>
 </div>
 </body>
