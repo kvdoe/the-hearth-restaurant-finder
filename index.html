@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -321,8 +321,8 @@ header{text-align:center;padding:52px 20px 32px;}
 }
 
 h1{
-  font-family:'Cinzel Decorative',serif;
-  font-size:clamp(38px,7.5vw,88px);
+  font-family:'Cinzel',serif;
+  font-size:clamp(36px,7vw,84px);
   font-weight:700;line-height:1.05;
   letter-spacing:.05em;
   color:var(--cream);
@@ -425,27 +425,38 @@ select option{background:#180900;}
   display:flex;align-items:center;justify-content:center;
   color:var(--amber);font-family:'Cinzel',serif;font-size:11px;
 }
-.ac-main{display:block;font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--cream);line-height:1.3;}
-.ac-sub {display:block;font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--muted);margin-top:2px;}
-.ac-msg{padding:13px 16px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--muted);text-align:center;}
+.ac-main{display:block;font-family:'Outfit',sans-serif;font-size:14px;font-weight:400;color:var(--cream);line-height:1.3;}
+.ac-sub {display:block;font-family:'Outfit',sans-serif;font-size:12px;font-weight:300;color:var(--muted);margin-top:2px;}
+.ac-msg{padding:13px 16px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--muted);text-align:center;}
 .ac-tip{color:var(--crm2)!important;font-style:normal!important;}
 .ac-tip strong{color:var(--amber);font-style:italic;}
 .ac-search-as{border-top:1px solid rgba(200,119,10,.15)!important;}
 .ac-search-as .ac-main{font-style:italic;color:var(--crm2)!important;}
 
-/* Cuisine chip picker */
-.cp-grid{display:flex;flex-direction:column;gap:10px;}
-.cp-section-label{display:block;font-family:'Cinzel',serif;font-size:7.5px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
-.cp-chips{display:flex;flex-wrap:wrap;gap:6px;}
-.cp-chip{
-  background:rgba(5,2,0,.65);border:1px solid var(--border);border-radius:20px;
-  padding:6px 13px;color:var(--crm2);
-  font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;letter-spacing:.02em;
+/* Cuisine two-level selector */
+.cat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;}
+.cat-btn{
+  background:rgba(5,2,0,.65);border:1px solid var(--border);border-radius:9px;
+  padding:13px 4px;color:var(--crm2);
+  font-family:'Outfit',sans-serif;font-size:11.5px;font-weight:500;
+  cursor:pointer;transition:all .18s;text-align:center;user-select:none;line-height:1.2;
+}
+.cat-btn:hover{border-color:rgba(200,119,10,.5);color:var(--cream);background:rgba(200,119,10,.06);}
+.cat-btn.on{background:rgba(200,119,10,.2);border-color:var(--amber);color:var(--cream);box-shadow:0 0 12px rgba(200,119,10,.15);}
+.sub-row{display:flex;flex-wrap:wrap;gap:7px;padding-top:2px;}
+.sub-chip{
+  background:rgba(5,2,0,.55);border:1px solid rgba(200,119,10,.14);border-radius:20px;
+  padding:9px 16px;color:var(--crm2);
+  font-family:'Outfit',sans-serif;font-size:12px;font-weight:400;
   cursor:pointer;transition:all .18s;user-select:none;white-space:nowrap;
 }
-.cp-chip:hover{border-color:rgba(200,119,10,.5);color:var(--cream);background:rgba(200,119,10,.08);transform:translateY(-1px);}
-.cp-chip.on{background:rgba(200,119,10,.2);border-color:var(--amber);color:var(--cream);box-shadow:0 0 12px rgba(200,119,10,.18),inset 0 1px 0 rgba(255,220,100,.1);}
-.cp-chip-any{font-size:11px;padding:7px 20px;}
+.sub-chip:hover{border-color:rgba(200,119,10,.45);color:var(--cream);background:rgba(200,119,10,.07);}
+.sub-chip.on{background:rgba(200,119,10,.18);border-color:rgba(200,119,10,.7);color:var(--cream);box-shadow:0 0 10px rgba(200,119,10,.12);}
+@media(min-width:641px){.cat-row{grid-template-columns:repeat(8,1fr);}}
+
+/* Maps button */
+.btn-maps{background:rgba(52,168,83,.07);border:1px solid rgba(52,168,83,.22);color:#7CC897;}
+.btn-maps:hover{background:rgba(52,168,83,.18);border-color:rgba(52,168,83,.4);transform:translateY(-1px);}
 
 /* Range + Budget rows */
 .range-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
@@ -590,6 +601,116 @@ select option{background:#180900;}
 </head>
 <body>
 
+
+
+<!-- ═══ PORTAL SPLASH ═══ -->
+<div id="po">
+  <canvas id="pc"></canvas>
+  <div id="pb"></div>
+  <div id="pf"></div>
+  <div id="pl-wrap">
+    <p id="pl-title">Food<span>quest</span></p>
+    <p id="pl-sub">Discover your next great meal</p>
+    <div id="pl-bar-wrap"><div id="pl-bar"></div></div>
+  </div>
+</div>
+<style>
+  #po{position:fixed;inset:0;z-index:9999;background:#020100;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  #pc{position:absolute;inset:0;width:100%;height:100%;z-index:1;}
+  #pb{position:absolute;border-radius:50%;background:#000;z-index:3;pointer-events:none;opacity:0;}
+  #pb.expand{opacity:1;transition:transform .8s cubic-bezier(.55,0,.85,.55);transform:scale(80);}
+  #pl-wrap{position:absolute;z-index:5;pointer-events:none;text-align:center;padding:0 24px;}
+  #pl-title{font-family:'Cinzel',serif;font-size:clamp(34px,8vw,80px);font-weight:700;color:#F0DFC0;letter-spacing:.07em;text-shadow:0 0 28px rgba(235,185,55,1),0 0 55px rgba(210,130,15,.8);animation:plp 2.2s ease-in-out infinite;user-select:none;line-height:1.1;}
+  #pl-title span{color:#E09020;}
+  #pl-sub{font-family:'Outfit',sans-serif;font-size:clamp(11px,2vw,16px);font-weight:300;color:rgba(220,185,100,.7);letter-spacing:.14em;margin-top:12px;user-select:none;}
+  #pl-bar-wrap{width:min(200px,55vw);height:3px;background:rgba(255,200,80,.15);border-radius:3px;margin:24px auto 0;overflow:hidden;}
+  #pl-bar{height:100%;width:0;background:linear-gradient(90deg,#C87808,#F0C040);border-radius:3px;animation:loadbar 2.5s ease-out forwards;}
+  @keyframes loadbar{to{width:100%}}
+  @keyframes plp{0%,100%{opacity:.8;text-shadow:0 0 22px rgba(225,175,45,.9),0 0 45px rgba(205,125,12,.6)}50%{opacity:1;text-shadow:0 0 38px rgba(255,215,75,1),0 0 70px rgba(235,150,28,1)}}
+  #pl-wrap.hide{opacity:0;transition:opacity .1s;}
+  #po.bye{opacity:0;transition:opacity .3s ease .65s;pointer-events:none;}
+  #pf{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(255,210,80,.9) 0%,rgba(200,120,10,.4) 40%,transparent 70%);}
+  #pf.flash{animation:pfb .5s ease-out forwards;}
+  @keyframes pfb{0%{opacity:0;transform:scale(.5)}20%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.8)}}
+</style>
+<script>
+(function(){
+  var ov=document.getElementById('po'),cv=document.getElementById('pc'),pb=document.getElementById('pb'),
+      pf=document.getElementById('pf'),lw=document.getElementById('pl-wrap'),ctx=cv.getContext('2d');
+  var W,H,CX,CY,R,vigCache=null;
+  function resize(){
+    W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;CX=W/2;CY=H/2;R=Math.min(W,H)*.27;
+    var d=Math.round(R*1.82)+'px';pb.style.width=d;pb.style.height=d;
+    pb.style.left=Math.round(CX-R*.91)+'px';pb.style.top=Math.round(CY-R*.91)+'px';vigCache=null;
+  }
+  resize();window.addEventListener('resize',resize);
+  function getVig(){
+    if(vigCache)return vigCache;
+    var oc=document.createElement('canvas');oc.width=W;oc.height=H;
+    var ox=oc.getContext('2d'),g=ox.createRadialGradient(CX,CY,R*.4,CX,CY,Math.max(W,H)*.9);
+    g.addColorStop(0,'rgba(10,5,1,0)');g.addColorStop(1,'rgba(0,0,0,.78)');
+    ox.fillStyle=g;ox.fillRect(0,0,W,H);vigCache=oc;return oc;
+  }
+  var N=65,pool=[];
+  function mk(rand){
+    var a=Math.random()*Math.PI*2;
+    return{a:a,rOff:(Math.random()-.5)*10,dR:(Math.random()-.5)*.003,spd:.017+Math.random()*.019,
+      life:rand?Math.random():.65+Math.random()*.35,dec:.01+Math.random()*.014,
+      sz:1.8+Math.random()*2.4,hue:24+Math.random()*22,lit:70+Math.random()*26,
+      tx:new Float32Array(5),ty:new Float32Array(5),ti:0,tc:0};
+  }
+  for(var i=0;i<N;i++)pool.push(mk(true));
+  var bursts=[];
+  function addBurst(){
+    var a=Math.random()*Math.PI*2,sp=2+Math.random()*3.5;
+    bursts.push({x:CX+Math.cos(a)*R,y:CY+Math.sin(a)*R,px:CX+Math.cos(a)*R,py:CY+Math.sin(a)*R,
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,dec:.028+Math.random()*.025,sz:1.2+Math.random()*1.8,hue:26+Math.random()*16});
+  }
+  function drawRing(){
+    ctx.save();ctx.shadowColor='rgba(220,150,25,1)';ctx.shadowBlur=30;
+    ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(210,145,22,.65)';ctx.lineWidth=5;ctx.stroke();ctx.restore();
+  }
+  var frame=0,rafId;
+  function loop(){
+    rafId=requestAnimationFrame(loop);frame++;
+    ctx.drawImage(getVig(),0,0);drawRing();ctx.lineCap='round';
+    for(var si=0;si<pool.length;si++){
+      var s=pool[si];s.a+=s.spd;s.rOff+=s.dR;if(Math.abs(s.rOff)>9)s.dR*=-1;
+      s.life-=s.dec;if(s.life<=0){Object.assign(s,mk(false));continue;}
+      var r=R+s.rOff,nx=CX+Math.cos(s.a)*r,ny=CY+Math.sin(s.a)*r;
+      var ii=s.ti%5;s.tx[ii]=nx;s.ty[ii]=ny;s.ti++;if(s.tc<5)s.tc++;
+      var len=s.tc;if(len<2)continue;
+      var start=(s.ti-len+5)%5;
+      ctx.beginPath();ctx.moveTo(s.tx[start],s.ty[start]);
+      for(var j=1;j<len;j++){var idx=(start+j)%5;ctx.lineTo(s.tx[idx],s.ty[idx]);}
+      ctx.strokeStyle='hsla('+s.hue+',100%,'+s.lit+'%,'+(s.life*.9)+')';
+      ctx.lineWidth=s.sz*.8;ctx.stroke();
+      ctx.beginPath();ctx.arc(nx,ny,s.sz*.65,0,Math.PI*2);
+      ctx.fillStyle='hsla(48,100%,95%,'+(s.life*.92)+')';ctx.fill();
+    }
+    if(frame%14===0)addBurst();
+    for(var bi=bursts.length-1;bi>=0;bi--){
+      var b=bursts[bi];b.px=b.x;b.py=b.y;b.vx*=.91;b.vy*=.91;b.x+=b.vx;b.y+=b.vy;b.life-=b.dec;
+      if(b.life<=0){bursts.splice(bi,1);continue;}
+      ctx.beginPath();ctx.moveTo(b.px,b.py);ctx.lineTo(b.x,b.y);
+      ctx.strokeStyle='hsla('+b.hue+',100%,78%,'+(b.life*.8)+')';
+      ctx.lineWidth=b.sz*b.life;ctx.stroke();
+      ctx.beginPath();ctx.arc(b.x,b.y,b.sz*b.life*.6,0,Math.PI*2);
+      ctx.fillStyle='hsla(44,100%,93%,'+(b.life*.85)+')';ctx.fill();
+    }
+    ctx.beginPath();ctx.arc(CX,CY,R-6,0,Math.PI*2);ctx.fillStyle='#000';ctx.fill();
+  }
+  loop();
+  setTimeout(function(){
+    cancelAnimationFrame(rafId);lw.classList.add('hide');pf.classList.add('flash');
+    setTimeout(function(){pb.classList.add('expand');},110);
+    setTimeout(function(){ov.classList.add('bye');},380);
+    setTimeout(function(){ov.remove();},1050);
+  },2600);
+})();
+</script>
+<!-- ═══ END PORTAL ═══ -->
 <div id="grain" aria-hidden="true"></div>
 <div id="vignette" aria-hidden="true"></div>
 <div id="stars" aria-hidden="true"></div>
@@ -654,7 +775,6 @@ select option{background:#180900;}
 
 <div id="app">
   <header>
-    <div class="hero-flame" aria-hidden="true"></div>
     <h1>Food<span>quest</span></h1>
     <p class="tagline">Discover your next great meal</p>
     <div class="ornament">&#10022; &nbsp; &#10022; &nbsp; &#10022;</div>
@@ -679,73 +799,17 @@ select option{background:#180900;}
 
     <div class="fg">
       <label class="fl-label">Cuisine</label>
-      <div class="cp-grid" id="cp-grid">
-        <div>
-          <div class="cp-chips">
-            <button class="cp-chip cp-chip-any on" data-v="restaurants">Any Cuisine</button>
-          </div>
-        </div>
-        <div>
-          <span class="cp-section-label">Morning</span>
-          <div class="cp-chips">
-            <button class="cp-chip" data-v="breakfast_brunch">Breakfast &amp; Brunch</button>
-            <button class="cp-chip" data-v="cafes,coffee">Cafes &amp; Coffee</button>
-            <button class="cp-chip" data-v="bakeries">Bakeries</button>
-          </div>
-        </div>
-        <div>
-          <span class="cp-section-label">Healthy</span>
-          <div class="cp-chips">
-            <button class="cp-chip" data-v="healthfood,acaibowls,poke,mediterranean,greek,vegetarian,vegan">Healthy &amp; Fresh</button>
-            <button class="cp-chip" data-v="vegetarian">Vegetarian</button>
-            <button class="cp-chip" data-v="vegan">Vegan</button>
-          </div>
-        </div>
-        <div>
-          <span class="cp-section-label">American &amp; Comfort</span>
-          <div class="cp-chips">
-            <button class="cp-chip" data-v="newamerican,tradamerican">American</button>
-            <button class="cp-chip" data-v="pizza">Pizza</button>
-            <button class="cp-chip" data-v="burgers">Burgers</button>
-            <button class="cp-chip" data-v="sandwiches">Sandwiches</button>
-            <button class="cp-chip" data-v="bbq">BBQ</button>
-            <button class="cp-chip" data-v="steak">Steak</button>
-            <button class="cp-chip" data-v="seafood">Seafood</button>
-          </div>
-        </div>
-        <div>
-          <span class="cp-section-label">Asian</span>
-          <div class="cp-chips">
-            <button class="cp-chip" data-v="chinese">Chinese</button>
-            <button class="cp-chip" data-v="japanese">Japanese</button>
-            <button class="cp-chip" data-v="sushi">Sushi</button>
-            <button class="cp-chip" data-v="thai">Thai</button>
-            <button class="cp-chip" data-v="korean">Korean</button>
-            <button class="cp-chip" data-v="vietnamese">Vietnamese</button>
-            <button class="cp-chip" data-v="ramen">Ramen</button>
-            <button class="cp-chip" data-v="indpak">Indian</button>
-          </div>
-        </div>
-        <div>
-          <span class="cp-section-label">Latin &amp; Caribbean</span>
-          <div class="cp-chips">
-            <button class="cp-chip" data-v="mexican">Mexican</button>
-            <button class="cp-chip" data-v="tacos">Tacos</button>
-            <button class="cp-chip" data-v="spanish">Spanish</button>
-            <button class="cp-chip" data-v="caribbean">Caribbean</button>
-          </div>
-        </div>
-        <div>
-          <span class="cp-section-label">European &amp; Mediterranean</span>
-          <div class="cp-chips">
-            <button class="cp-chip" data-v="italian">Italian</button>
-            <button class="cp-chip" data-v="french">French</button>
-            <button class="cp-chip" data-v="mediterranean">Mediterranean</button>
-            <button class="cp-chip" data-v="greek">Greek</button>
-            <button class="cp-chip" data-v="mideastern">Middle Eastern</button>
-          </div>
-        </div>
+      <div class="cat-row" id="cat-row">
+        <button class="cat-btn on" data-cat="any">Any</button>
+        <button class="cat-btn" data-cat="morning">Morning</button>
+        <button class="cat-btn" data-cat="healthy">Healthy</button>
+        <button class="cat-btn" data-cat="american">American</button>
+        <button class="cat-btn" data-cat="asian">Asian</button>
+        <button class="cat-btn" data-cat="latin">Latin</button>
+        <button class="cat-btn" data-cat="euro">European</button>
+        <button class="cat-btn" data-cat="dessert">Desserts</button>
       </div>
+      <div class="sub-row" id="sub-row"></div>
     </div>
 
     <div class="fg">
@@ -810,50 +874,67 @@ select option{background:#180900;}
 </div>
 
 <script>
-/* ─── Kitchen utensil shelves ────────────────── */
+/* ─── SVG kitchen utensil shelves ───────────── */
 (function(){
-  const STEEL=['linear-gradient(180deg,#C8CDD4,#8898A8,#BCC4CC)','linear-gradient(180deg,#D0D4D8,#9098A0,#C4CCCC)'];
-  const COPPER=['linear-gradient(180deg,#D4883A,#9A5820,#C87838)','linear-gradient(180deg,#C07030,#8B4818,#B86828)'];
-  const WOOD=['linear-gradient(180deg,#C8904A,#8B5828,#C08848)','linear-gradient(180deg,#B87840,#784E20,#A87038)'];
-  const IRON=['linear-gradient(180deg,#585E60,#282E30,#404848)','linear-gradient(180deg,#484E50,#202828,#383E40)'];
-  const BRASS=['linear-gradient(180deg,#D4A838,#907018,#C89830)','linear-gradient(180deg,#C89028,#806010,#B88020)'];
-  function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
-  function rnd(lo,hi){return lo+Math.floor(Math.random()*(hi-lo+1));}
-  function utensil(){
-    const el=document.createElement('div');
-    const t=Math.random();
-    if(t<0.22){
-      // Knife / skewer — very narrow, tall
-      const w=rnd(2,4),h=rnd(36,55);
-      el.style.cssText=`width:${w}px;height:${h}px;background:${pick(STEEL)};border-radius:${w}px ${w}px 0 0;flex-shrink:0;`;
-    }else if(t<0.44){
-      // Wooden spoon / spatula handle
-      const w=rnd(6,10),h=rnd(28,46);
-      el.style.cssText=`width:${w}px;height:${h}px;background:${pick(WOOD)};border-radius:${w/2}px ${w/2}px 2px 2px;flex-shrink:0;`;
-    }else if(t<0.60){
-      // Ladle / metal spoon — narrow with rounded top
-      const w=rnd(5,8),h=rnd(30,48);
-      el.style.cssText=`width:${w}px;height:${h}px;background:${pick(STEEL)};border-radius:50% 50% 2px 2px / 30% 30% 2px 2px;flex-shrink:0;`;
-    }else if(t<0.75){
-      // Pot / saucepan — wide, shorter
-      const w=rnd(20,32),h=rnd(16,26);
-      el.style.cssText=`width:${w}px;height:${h}px;background:${Math.random()<0.55?pick(IRON):pick(COPPER)};border-radius:3px 3px 6px 6px;flex-shrink:0;box-shadow:inset 0 3px 5px rgba(255,255,255,.07),inset 0 -2px 4px rgba(0,0,0,.45);`;
-    }else if(t<0.87){
-      // Rolling pin / canister — oval
-      const w=rnd(10,18),h=rnd(12,20);
-      el.style.cssText=`width:${w}px;height:${h}px;background:${Math.random()<0.5?pick(WOOD):pick(BRASS)};border-radius:${Math.ceil(h/2)}px;flex-shrink:0;`;
-    }else{
-      // Bottle / oil cruet — classic thin bottle silhouette
-      const w=rnd(8,12),h=rnd(30,44);
-      el.style.cssText=`width:${w}px;height:${h}px;background:${Math.random()<0.5?pick(BRASS):'linear-gradient(180deg,rgba(60,110,60,.75),rgba(30,70,30,.6))'};border-radius:${w/2}px ${w/2}px 2px 2px;flex-shrink:0;box-shadow:inset 2px 0 4px rgba(255,255,255,.08);`;
-    }
-    return el;
-  }
+  const P={
+    steel:['#A8B4BC','#8898A8'],copper:['#C07838','#904820'],
+    wood:['#B07A40','#785030'],iron:['#525E60','#2A3030'],brass:['#B09028','#806810']
+  };
+  function g(k){return P[k][Math.floor(Math.random()*2)];}
+  function rnd(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+  function el(svg){const d=document.createElement('div');d.style.flexShrink='0';d.innerHTML=svg;return d;}
+  function fork(){
+    const s=g('steel'),w=g('wood'),h=rnd(36,50),sw=Math.round(h*.2);
+    return el(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 50" width="${sw}" height="${h}" style="display:block">
+      <rect x="0.8" y="1" width="1.8" height="13" rx="0.9" fill="${s}"/>
+      <rect x="4.1" y="1" width="1.8" height="13" rx="0.9" fill="${s}"/>
+      <rect x="7.4" y="1" width="1.8" height="13" rx="0.9" fill="${s}"/>
+      <path d="M1.7 14 C2 18 8 18 8.3 14" stroke="${s}" stroke-width="1.5" fill="none"/>
+      <rect x="3.8" y="17" width="2.4" height="15" rx="1.2" fill="${s}"/>
+      <rect x="3.8" y="32" width="2.4" height="16" rx="1.2" fill="${w}"/></svg>`);}
+  function spoon(){
+    const s=g('steel'),w=g('wood'),h=rnd(36,50);
+    return el(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 52" width="${Math.round(h*.23)}" height="${h}" style="display:block">
+      <ellipse cx="6" cy="8.5" rx="5.5" ry="7.5" fill="${s}"/>
+      <ellipse cx="5.5" cy="8" rx="3" ry="4.5" fill="${s}" opacity="0.2"/>
+      <rect x="4.5" y="14.5" width="3" height="17" rx="1.5" fill="${s}"/>
+      <rect x="4.5" y="31" width="3" height="19" rx="1.5" fill="${w}"/></svg>`);}
+  function knife(){
+    const s=g('steel'),w=Math.random()<.5?g('wood'):g('iron'),h=rnd(42,56);
+    return el(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 54" width="${Math.round(h*.14)}" height="${h}" style="display:block">
+      <path d="M4 1 L7 4 L7 26 Q5.5 30 4 30 Q2.5 30 1 26 L1 4 Z" fill="${s}"/>
+      <rect x="0.5" y="26" width="7" height="2.5" rx="0.5" fill="${g('iron')}" opacity="0.5"/>
+      <rect x="1.5" y="28.5" width="5" height="23" rx="2.5" fill="${w}"/></svg>`);}
+  function pot(){
+    const col=Math.random()<.5?g('iron'):g('copper'),h=rnd(20,30),w=rnd(28,40);
+    return el(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 30" width="${w}" height="${h}" style="display:block">
+      <rect x="4" y="7" width="32" height="21" rx="3" fill="${col}"/>
+      <rect x="0" y="11" width="5" height="9" rx="2.5" fill="${col}"/>
+      <rect x="35" y="11" width="5" height="9" rx="2.5" fill="${col}"/>
+      <rect x="2" y="4" width="36" height="5" rx="2.5" fill="${g('iron')}"/>
+      <rect x="14" y="1" width="12" height="4" rx="2" fill="${g('iron')}"/></svg>`);}
+  function ladle(){
+    const s=g('steel'),w=g('wood'),h=rnd(36,50);
+    return el(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 56" width="${Math.round(h*.27)}" height="${h}" style="display:block">
+      <ellipse cx="8" cy="10" rx="7.5" ry="9" fill="${s}"/>
+      <ellipse cx="7.5" cy="9.5" rx="4.5" ry="5.5" fill="${s}" opacity="0.18"/>
+      <rect x="6" y="17" width="4" height="18" rx="2" fill="${s}"/>
+      <rect x="6" y="35" width="4" height="19" rx="2" fill="${w}"/></svg>`);}
+  function spatula(){
+    const s=g('steel'),w=g('wood'),h=rnd(40,54);
+    return el(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 56" width="${Math.round(h*.2)}" height="${h}" style="display:block">
+      <rect x="1" y="1" width="10" height="19" rx="1.5" fill="${s}"/>
+      <rect x="3" y="4" width="2" height="13" rx="1" fill="${s}" opacity="0.18"/>
+      <rect x="7" y="4" width="2" height="13" rx="1" fill="${s}" opacity="0.18"/>
+      <circle cx="6" cy="12" r="1.5" fill="${s}" opacity="0.18"/>
+      <rect x="4.5" y="20" width="3" height="2" rx="0.5" fill="${g('iron')}" opacity="0.4"/>
+      <rect x="4.5" y="22" width="3" height="30" rx="1.5" fill="${w}"/></svg>`);}
+  const TYPES=[fork,spoon,knife,pot,ladle,spatula];
   ['shelf-l','shelf-r'].forEach(id=>{
     const u=document.getElementById(id); if(!u)return;
     for(let s=0;s<4;s++){
       const row=document.createElement('div'); row.className='shelf-row';
-      for(let b=0;b<rnd(4,7);b++) row.appendChild(utensil());
+      for(let b=0;b<rnd(3,5);b++) row.appendChild(TYPES[Math.floor(Math.random()*TYPES.length)]());
       u.appendChild(row);
       const p=document.createElement('div'); p.className='shelf-plank'; u.appendChild(p);
     }
@@ -933,13 +1014,74 @@ document.querySelectorAll('#rating-row .bb').forEach(b=>{
   });
 });
 
-/* ─── Cuisine chips ──────────────────────────── */
+/* ─── Cuisine two-level selector ────────────── */
+const CUISINE_DATA={
+  any:     {v:'restaurants',subs:[]},
+  morning: {v:'breakfast_brunch,cafes,coffee,bakeries',subs:[
+    {label:'Breakfast & Brunch',v:'breakfast_brunch'},
+    {label:'Cafés & Coffee',    v:'cafes,coffee'},
+    {label:'Bakeries',          v:'bakeries'}]},
+  healthy: {v:'healthfood,acaibowls,poke,mediterranean,greek,vegetarian,vegan',subs:[
+    {label:'Healthy & Fresh',v:'healthfood,acaibowls,poke,mediterranean,greek,vegetarian,vegan'},
+    {label:'Vegetarian',     v:'vegetarian'},
+    {label:'Vegan',          v:'vegan'}]},
+  american:{v:'newamerican,tradamerican,pizza,burgers,sandwiches,bbq,steak,seafood',subs:[
+    {label:'American',   v:'newamerican,tradamerican'},
+    {label:'Pizza',      v:'pizza'},
+    {label:'Burgers',    v:'burgers'},
+    {label:'Sandwiches', v:'sandwiches'},
+    {label:'BBQ',        v:'bbq'},
+    {label:'Steak',      v:'steak'},
+    {label:'Seafood',    v:'seafood'}]},
+  asian:   {v:'chinese,japanese,sushi,thai,korean,vietnamese,ramen,indpak',subs:[
+    {label:'Chinese',    v:'chinese'},
+    {label:'Japanese',   v:'japanese'},
+    {label:'Sushi',      v:'sushi'},
+    {label:'Thai',       v:'thai'},
+    {label:'Korean',     v:'korean'},
+    {label:'Vietnamese', v:'vietnamese'},
+    {label:'Ramen',      v:'ramen'},
+    {label:'Indian',     v:'indpak'}]},
+  latin:   {v:'mexican,tacos,spanish,caribbean',subs:[
+    {label:'Mexican',   v:'mexican'},
+    {label:'Tacos',     v:'tacos'},
+    {label:'Spanish',   v:'spanish'},
+    {label:'Caribbean', v:'caribbean'}]},
+  euro:    {v:'italian,french,mediterranean,greek,mideastern',subs:[
+    {label:'Italian',       v:'italian'},
+    {label:'French',        v:'french'},
+    {label:'Mediterranean', v:'mediterranean'},
+    {label:'Greek',         v:'greek'},
+    {label:'Middle Eastern',v:'mideastern'}]},
+  dessert: {v:'desserts,icecream,bakeries,donuts,cupcakes',subs:[
+    {label:'All Desserts', v:'desserts,icecream,donuts,cupcakes'},
+    {label:'Ice Cream',    v:'icecream'},
+    {label:'Bakeries',     v:'bakeries'},
+    {label:'Donuts',       v:'donuts'}]},
+};
 let selectedCuisine='restaurants';
-document.querySelectorAll('#cp-grid .cp-chip').forEach(chip=>{
-  chip.addEventListener('click',()=>{
-    document.querySelectorAll('#cp-grid .cp-chip').forEach(c=>c.classList.remove('on'));
-    chip.classList.add('on'); selectedCuisine=chip.dataset.v;
-  });
+function setCuisineCat(cat){
+  const data=CUISINE_DATA[cat];
+  selectedCuisine=data.v;
+  document.querySelectorAll('#cat-row .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat===cat));
+  const sr=document.getElementById('sub-row');
+  sr.innerHTML='';
+  if(data.subs.length){
+    data.subs.forEach((sub,i)=>{
+      const ch=document.createElement('button');
+      ch.className='sub-chip'+(i===0?' on':'');
+      ch.textContent=sub.label;
+      ch.addEventListener('click',()=>{
+        sr.querySelectorAll('.sub-chip').forEach(c=>c.classList.remove('on'));
+        ch.classList.add('on'); selectedCuisine=sub.v;
+      });
+      sr.appendChild(ch);
+    });
+    selectedCuisine=data.subs[0].v;
+  }
+}
+document.querySelectorAll('#cat-row .cat-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>setCuisineCat(btn.dataset.cat));
 });
 
 /* ─── My Location ────────────────────────────── */
@@ -1137,6 +1279,7 @@ function makeCard(r,idx){
   const photo=r.image_url
     ?`<img class="card-img" src="${esc(r.image_url)}" alt="${esc(r.name)}" loading="lazy" onerror="this.outerHTML='<div class=card-ph>${esc(r.name[0]||'?')}</div>'">`
     :`<div class="card-ph">${esc(r.name[0]||'?')}</div>`;
+  const mapsBtn=r.coordinates?`<a class="btn-maps" href="https://maps.google.com/?q=${r.coordinates.latitude},${r.coordinates.longitude}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Maps</a>`:'';
   const webBtn=(r.website&&!r.website.includes('yelp.com'))
     ?`<a class="btn-web" href="${esc(r.website)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Website</a>`:'';
   a.innerHTML=`${photo}
@@ -1156,8 +1299,9 @@ function makeCard(r,idx){
       </div>
       <div class="card-addr">${esc(addr)}</div>
       <div class="card-btns">
-        <a class="btn-yelp" href="${esc(r.url||'#')}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">View on Yelp</a>
+        <a class="btn-yelp" href="${esc(r.url||'#')}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Yelp</a>
         ${webBtn}
+        ${mapsBtn}
       </div>
     </div>`;
   return a;
