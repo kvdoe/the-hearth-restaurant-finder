@@ -548,7 +548,7 @@ select option{background:#180900;}
 ═══════════════════════════════════ */
 .card{
   background:var(--cbg);border:1px solid var(--border);border-radius:var(--r);
-  overflow:hidden;
+  overflow:hidden;position:relative;
   transition:transform .28s cubic-bezier(.22,.68,0,1.2),box-shadow .28s,border-color .28s;
   text-decoration:none;color:inherit;
   display:flex;flex-direction:column;
@@ -609,12 +609,88 @@ select option{background:#180900;}
   #app.visible{transition-delay:.7s;}
 }
 @media(max-width:400px){.shelf-unit{display:none;}#lan-l,#lan-r{display:none;}}
+
+/* ═══ FAVORITES ═══ */
+.fav-btn{
+  position:absolute;top:10px;right:10px;z-index:3;
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(10,4,1,.78);border:1px solid rgba(200,119,10,.22);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;line-height:1;cursor:pointer;
+  color:rgba(240,223,192,.4);transition:all .18s;
+}
+.fav-btn:hover{background:rgba(10,4,1,.96);border-color:rgba(200,119,10,.5);}
+.fav-btn.on{color:#FF6060;border-color:rgba(255,96,96,.45);background:rgba(10,4,1,.9);}
+
+/* Desktop saved button (top-right) */
+#saved-btn{
+  position:fixed;top:26px;right:28px;z-index:20;
+  background:rgba(13,6,1,.92);border:1px solid var(--border);border-radius:24px;
+  padding:10px 16px;color:var(--crm2);
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;letter-spacing:.03em;
+  cursor:pointer;transition:all .22s;
+  display:flex;align-items:center;gap:8px;
+}
+#saved-btn:hover{border-color:rgba(200,119,10,.5);color:var(--cream);}
+#saved-badge{
+  background:var(--amber);color:#0C0500;font-size:10px;font-weight:700;
+  min-width:18px;height:18px;border-radius:9px;
+  display:none;align-items:center;justify-content:center;padding:0 4px;
+}
+
+/* Mobile bottom nav */
+#bottom-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:rgba(8,3,0,.97);border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom,0);
+}
+.tab-btn{
+  flex:1;padding:11px 0 9px;background:none;border:none;
+  color:var(--muted);font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;
+  letter-spacing:.05em;cursor:pointer;transition:color .18s;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.tab-btn .tab-ico{font-size:20px;line-height:1;}
+.tab-btn.active{color:var(--amber);}
+.mob-badge{
+  background:var(--amber);color:#0C0500;font-size:9px;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;
+  display:none;align-items:center;justify-content:center;padding:0 3px;
+  position:absolute;top:6px;right:calc(50% - 20px);
+}
+
+/* Favorites view overlay */
+#favs-overlay{
+  display:none;position:fixed;inset:0;z-index:16;overflow-y:auto;
+  background:var(--bg);padding:100px 20px 140px;
+}
+#favs-overlay.open{display:block;}
+.favs-hdr{text-align:center;margin-bottom:32px;}
+.favs-hdr h2{font-family:'Cinzel',serif;font-size:clamp(20px,4vw,30px);font-weight:600;color:var(--cream);letter-spacing:.06em;}
+.favs-hdr p{font-family:'Outfit',sans-serif;font-size:14px;color:var(--crm2);margin-top:6px;}
+#favs-grid{max-width:980px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(278px,1fr));gap:20px;}
+#favs-empty{max-width:380px;margin:60px auto;text-align:center;}
+#favs-empty .fav-ico{font-size:48px;color:rgba(200,119,10,.35);margin-bottom:16px;}
+#favs-empty h3{font-family:'Cinzel',serif;font-size:20px;color:var(--cream);margin-bottom:10px;letter-spacing:.04em;}
+#favs-empty p{font-family:'Outfit',sans-serif;font-size:15px;color:var(--crm2);line-height:1.6;}
+
+@media(max-width:640px){
+  #bottom-nav{display:flex;}
+  #saved-btn{display:none;}
+  body{padding-bottom:68px;}
+  #favs-overlay{padding:80px 16px 100px;}
+  #favs-grid{grid-template-columns:1fr;}
+}
   </style>
 </head>
 <body>
 
 
 
+<!-- Desktop Saved button -->
+<button id="saved-btn" aria-label="View saved restaurants">
+  &#9825; Saved <span id="saved-badge"></span>
+</button>
 <!-- ═══ PORTAL SPLASH ═══ -->
 <div id="po">
   <canvas id="pc"></canvas>
@@ -1280,13 +1356,57 @@ async function doSearch(append){
   }
 }
 
+/* ─── Favorites ─────────────────────────────── */
+const FAV_KEY='fq-favs';
+function getFavs(){try{return JSON.parse(localStorage.getItem(FAV_KEY))||[];}catch{return[];}}
+function isFavd(id){return getFavs().some(r=>r.id===id);}
+function toggleFav(r){
+  let favs=getFavs();
+  if(favs.some(f=>f.id===r.id)){favs=favs.filter(f=>f.id!==r.id);}
+  else{favs.unshift(r);}
+  localStorage.setItem(FAV_KEY,JSON.stringify(favs));
+  updateFavCount();
+}
+function updateFavCount(){
+  const n=getFavs().length;
+  const b=document.getElementById('saved-badge');
+  const mb=document.getElementById('mob-badge');
+  if(b){b.textContent=n;b.style.display=n?'flex':'none';}
+  if(mb){mb.textContent=n;mb.style.display=n?'flex':'none';}
+}
+
+let favsOpen=false;
+function openFavs(){
+  favsOpen=true;
+  document.getElementById('favs-overlay').classList.add('open');
+  renderFavs();
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab==='favs'));
+}
+function closeFavs(){
+  favsOpen=false;
+  document.getElementById('favs-overlay').classList.remove('open');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab==='search'));
+}
+function renderFavs(){
+  const favs=getFavs();
+  const grid=document.getElementById('favs-grid');
+  const empty=document.getElementById('favs-empty');
+  grid.innerHTML='';
+  empty.style.display=favs.length?'none':'block';
+  favs.forEach((r,i)=>grid.appendChild(makeCard(r,i)));
+}
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>btn.dataset.tab==='favs'?openFavs():closeFavs());
+});
+document.getElementById('saved-btn').addEventListener('click',()=>favsOpen?closeFavs():openFavs());
+updateFavCount();
 /* ─── Card builder ───────────────────────────── */
 function makeCard(r,idx){
   const a=document.createElement('div');
   a.className='card'; a.style.cursor='pointer';
   a.style.animationDelay=`${idx*60}ms`;
   if(r.url) a.addEventListener('click',function(e){
-    if(!e.target.closest('a')) window.open(r.url,'_blank','noopener,noreferrer');
+    if(!e.target.closest('a')&&!e.target.closest('.fav-btn')) window.open(r.url,'_blank','noopener,noreferrer');
   });
   const cats=(r.categories||[]).map(c=>c.title).slice(0,2);
   const dist=mi(r.distance);
@@ -1321,8 +1441,48 @@ function makeCard(r,idx){
         ${mapsBtn}
       </div>
     </div>`;
+
+  // Heart / favorite button
+  const fb=document.createElement('button');
+  fb.className='fav-btn'+(isFavd(r.id)?' on':'');
+  fb.setAttribute('aria-label','Save');
+  fb.innerHTML=isFavd(r.id)?'&#9829;':'&#9825;';
+  fb.addEventListener('click',function(e){
+    e.stopPropagation();
+    toggleFav(r);
+    const now=isFavd(r.id);
+    fb.classList.toggle('on',now);
+    fb.innerHTML=now?'&#9829;':'&#9825;';
+    if(favsOpen) renderFavs();
+  });
+  a.appendChild(fb);
   return a;
 }
 </script>
+
+<!-- Mobile bottom nav -->
+<nav id="bottom-nav">
+  <button class="tab-btn active" data-tab="search">
+    <span class="tab-ico">&#128269;</span>Search
+  </button>
+  <button class="tab-btn" data-tab="favs" style="position:relative">
+    <span class="tab-ico">&#9825;</span>Saved
+    <span class="mob-badge" id="mob-badge"></span>
+  </button>
+</nav>
+
+<!-- Favorites overlay -->
+<div id="favs-overlay">
+  <div class="favs-hdr">
+    <h2>&#9825; &nbsp;Saved Restaurants</h2>
+    <p>Your favorite spots, all in one place</p>
+  </div>
+  <div id="favs-grid"></div>
+  <div id="favs-empty">
+    <div class="fav-ico">&#9825;</div>
+    <h3>Nothing saved yet</h3>
+    <p>Tap the &#9825; on any restaurant card to save it here for later.</p>
+  </div>
+</div>
 </body>
 </html>
