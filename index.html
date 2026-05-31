@@ -67,7 +67,7 @@ body{
 #win{
   position:fixed;top:22px;left:50%;transform:translateX(-50%);
   width:min(230px,26vw);height:min(160px,20vh);
-  z-index:2;pointer-events:none;
+  z-index:8;pointer-events:none;
 }
 .win-outer{
   width:100%;height:100%;
@@ -397,13 +397,18 @@ select option{background:#180900;}
 
 /* My Location button */
 #geo-btn{
-  margin-top:8px;padding:0;background:none;border:none;
-  color:var(--amber);opacity:.65;
-  font-family:'Outfit',sans-serif;font-size:11px;font-weight:500;letter-spacing:.04em;
-  cursor:pointer;transition:opacity .2s;display:inline-flex;align-items:center;gap:4px;
+  margin-top:10px;
+  padding:10px 18px;
+  background:rgba(200,119,10,.08);
+  border:1px solid rgba(200,119,10,.35);
+  border-radius:9px;
+  color:var(--amber);
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;letter-spacing:.03em;
+  cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px;
+  width:100%;justify-content:center;
 }
-#geo-btn:hover{opacity:1;}
-#geo-btn:disabled{opacity:.3;cursor:wait;}
+#geo-btn:hover{background:rgba(200,119,10,.16);border-color:var(--amber);color:var(--cream);}
+#geo-btn:disabled{opacity:.35;cursor:wait;}
 
 /* Autocomplete */
 .ac-wrap{position:relative;}
@@ -587,9 +592,8 @@ select option{background:#180900;}
    RESPONSIVE
 ═══════════════════════════════════ */
 /* App reveal after portal */
-#app{opacity:0;animation:app-reveal .8s ease-out 3.9s both;}
-@keyframes app-reveal{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-body.portal-done #app{animation:none;opacity:1;transition:opacity .8s ease,transform .8s ease;transform:none;}
+#app{opacity:0;transform:translateY(36px);}
+#app.visible{opacity:1;transform:none;transition:opacity .9s ease,transform .9s cubic-bezier(.22,1,.36,1);}
 
 @media(max-width:640px){
   #search-card{padding:24px 18px;}
@@ -600,8 +604,8 @@ body.portal-done #app{animation:none;opacity:1;transition:opacity .8s ease,trans
   #win{width:min(155px,44vw);height:min(108px,14vh);}
   .shelf-unit{width:min(68px,6.5vw);}
   #lan-l{left:9%;}#lan-r{right:9%;}
-  header{padding:150px 20px 20px;}
-  body.portal-done #app{transition-delay:.5s;}
+  header{padding:175px 20px 20px;}
+  #app.visible{transition-delay:.7s;}
 }
 @media(max-width:400px){.shelf-unit{display:none;}#lan-l,#lan-r{display:none;}}
   </style>
@@ -650,7 +654,7 @@ body.portal-done #app{animation:none;opacity:1;transition:opacity .8s ease,trans
     var d=Math.round(R*1.82)+'px';pb.style.width=d;pb.style.height=d;
     pb.style.left=Math.round(CX-R*.91)+'px';pb.style.top=Math.round(CY-R*.91)+'px';vigCache=null;
   }
-  function positionText(){var t=CY+R+22;if(t+110>H)t=H-130;lw.style.top=t+'px';lw.style.left='0';lw.style.right='0';}
+  function positionText(){lw.style.top='50%';lw.style.left='0';lw.style.right='0';lw.style.transform='translateY(-50%)';}
   resize();positionText();window.addEventListener('resize',function(){resize();positionText();});
   function getVig(){
     if(vigCache)return vigCache;
@@ -714,7 +718,7 @@ body.portal-done #app{animation:none;opacity:1;transition:opacity .8s ease,trans
     cancelAnimationFrame(rafId);lw.classList.add('hide');pf.classList.add('flash');
     setTimeout(function(){pb.classList.add('expand');},110);
     setTimeout(function(){ov.classList.add('bye');},380);
-    setTimeout(function(){ov.remove();document.body.classList.add('portal-done');},1050);
+    setTimeout(function(){ov.remove();document.body.classList.add('portal-done');document.getElementById('app').classList.add('visible');},1050);
   },3400);
 })();
 </script>
@@ -802,7 +806,7 @@ body.portal-done #app{animation:none;opacity:1;transition:opacity .8s ease,trans
                aria-haspopup="listbox" aria-expanded="false" aria-controls="ac-drop" />
         <div id="ac-drop" role="listbox"></div>
       </div>
-      <button type="button" id="geo-btn">&#9673; Use My Location</button>
+      <button type="button" id="geo-btn">&#9657; Use My Current Location</button>
     </div>
 
     <div class="fg">
@@ -1106,11 +1110,11 @@ document.getElementById('geo-btn').addEventListener('click',function(){
       selCoords={lat:String(lat),lon:String(lon),name:'My Location'};
       locInput.value='My Current Location';
       locInput.classList.add('confirmed');
-      btn.innerHTML='&#9673; Use My Location'; btn.disabled=false;
+      btn.innerHTML='&#9657; Use My Current Location'; btn.disabled=false;
       acHide();
     },
     err=>{
-      btn.innerHTML='&#9673; Use My Location'; btn.disabled=false;
+      btn.innerHTML='&#9657; Use My Current Location'; btn.disabled=false;
       const msg=err.code===err.PERMISSION_DENIED
         ?'Location access denied — please allow it in your browser settings.'
         :'Could not get your location. Please type your address instead.';
