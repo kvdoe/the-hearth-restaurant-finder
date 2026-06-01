@@ -1492,6 +1492,7 @@ function openAccount(){
 function closeAccount(){
   accountOpen=false;
   document.getElementById('account-overlay').classList.remove('open');
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab==='search');});
 }
 function openFavs(){
   favsOpen=true;
@@ -1643,9 +1644,9 @@ document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('.tab-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
       var t=btn.dataset.tab;
-      if(t==='favs') openFavs();
-      else if(t==='account'){ if(_currentUser) openAccount(); else showAuthModal(); }
-      else closeFavs();
+      if(t==='favs'){closeAccount();openFavs();}
+      else if(t==='account'){closeFavs();if(_currentUser) openAccount(); else showAuthModal();}
+      else{closeFavs();closeAccount();}
     });
   });
   var sb=document.getElementById('saved-btn');
@@ -1813,14 +1814,14 @@ function makeCard(r,idx){
 <!-- Bottom nav (mobile) + Favorites overlay — both need DOMContentLoaded listeners above -->
 <nav id="bottom-nav">
   <button class="tab-btn active" data-tab="search">
-    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6a3 3 0 006 0V2"/><line x1="6" y1="8" x2="6" y2="22"/><line x1="21" y1="2" x2="21" y2="22"/><path d="M15 2a5 5 0 005 5"/></svg></span>Search
+    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="22" y2="22"/></svg></span>Search
   </button>
   <button class="tab-btn" data-tab="favs" style="position:relative">
-    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C10.5 7.5 6 9.5 6 15a6 6 0 0012 0c0-5.5-4.5-7.5-6-13zm0 10.5c0 2-1.5 3-1.5 4.5a1.5 1.5 0 003 0c0-1.5-1.5-2.5-1.5-4.5z"/></svg></span>Saved
+    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>Saved
     <span class="mob-badge" id="mob-badge"></span>
   </button>
   <button class="tab-btn" data-tab="account">
-    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14l-3 8a5 5 0 01-8 0L5 3z"/><line x1="12" y1="15" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg></span>Account
+    <span class="tab-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>Account
   </button>
 </nav>
 
@@ -1838,5 +1839,6 @@ function makeCard(r,idx){
 </div>
 </body>
 </html>
+
 
 
